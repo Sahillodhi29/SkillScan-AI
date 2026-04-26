@@ -20,9 +20,7 @@ Built for the **Catalyst Hackathon** by Deccan AI.
 
 ## 🖥️ Demo
 
-> 📹 **[Watch the 5-minute demo video →](#)** *(link to be added)*
-
-**Live App:** *(deployed URL or see local setup below)*
+**Live App:** https://skillscanai23.netlify.app
 
 ---
 
