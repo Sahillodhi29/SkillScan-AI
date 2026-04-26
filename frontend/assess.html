@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SkillScan AI — Live Assessment</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;0,900;1,700;1,800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;background:#06000d;color:#fff;font-family:'Plus Jakarta Sans',sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden}
+
+:root{
+  --pink:#ec4899;--pink-light:#f472b6;--purple:#a855f7;
+  --pink-glow:rgba(236,72,153,0.35);--purple-glow:rgba(168,85,247,0.25);
+}
+
+.page-wrap{opacity:0;transform:scale(0.98);animation:pageIn 0.75s cubic-bezier(0.22,1,0.36,1) 0.05s forwards;height:100vh;display:flex;flex-direction:column}
+@keyframes pageIn{to{opacity:1;transform:scale(1)}}
+
+/* Ambient BG */
+.bg-layer{position:fixed;inset:0;z-index:0;pointer-events:none}
+.bg-mesh{position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 15% 20%,rgba(236,72,153,0.12) 0%,transparent 55%),radial-gradient(ellipse 60% 50% at 85% 80%,rgba(168,85,247,0.1) 0%,transparent 55%),radial-gradient(ellipse 40% 40% at 50% 50%,rgba(236,72,153,0.04) 0%,transparent 60%)}
+.bg-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(236,72,153,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(236,72,153,0.04) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse 100% 100% at 50% 50%,black 20%,transparent 85%)}
+.noise{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.025;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='250' height='250'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.88' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='250' height='250' filter='url(%23n)'/%3E%3C/svg%3E")}
+.scan-line{position:fixed;left:0;right:0;height:1px;z-index:1;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(236,72,153,0.3),rgba(168,85,247,0.2),transparent);animation:scanMove 12s linear infinite;opacity:0.25}
+@keyframes scanMove{0%{top:-2px}100%{top:100vh}}
+
+/* Corner brackets */
+.bracket{position:fixed;width:36px;height:36px;z-index:15;pointer-events:none}
+.bracket::before,.bracket::after{content:'';position:absolute;background:rgba(236,72,153,0.22)}
+.tl{top:16px;left:16px}.tl::before{top:0;left:0;width:100%;height:1px}.tl::after{top:0;left:0;width:1px;height:100%}
+.tr{top:16px;right:16px}.tr::before{top:0;right:0;width:100%;height:1px}.tr::after{top:0;right:0;width:1px;height:100%}
+.bl{bottom:16px;left:16px}.bl::before{bottom:0;left:0;width:100%;height:1px}.bl::after{bottom:0;left:0;width:1px;height:100%}
+.br{bottom:16px;right:16px}.br::before{bottom:0;right:0;width:100%;height:1px}.br::after{bottom:0;right:0;width:1px;height:100%}
+
+/* Topbar */
+.topbar{position:relative;z-index:20;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:16px 28px;background:rgba(6,0,13,0.7);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-bottom:1px solid rgba(236,72,153,0.12)}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo-mark{width:32px;height:32px;border-radius:9px;flex-shrink:0;font-size:15px;background:linear-gradient(135deg,#ec4899,#a855f7);display:flex;align-items:center;justify-content:center;box-shadow:0 0 18px rgba(236,72,153,0.4),0 0 40px rgba(236,72,153,0.15)}
+.logo-name{font-size:0.85rem;font-weight:600;letter-spacing:-0.01em;background:linear-gradient(135deg,rgba(255,200,230,0.95),rgba(220,180,255,0.75));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.live-pill{display:inline-flex;align-items:center;gap:7px;padding:7px 16px;border-radius:100px;background:rgba(236,72,153,0.08);border:1px solid rgba(236,72,153,0.2);font-size:0.65rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,160,200,0.7);backdrop-filter:blur(8px)}
+.live-dot{width:6px;height:6px;border-radius:50%;background:#ec4899;animation:livePulse 2s ease-in-out infinite;box-shadow:0 0 6px rgba(236,72,153,0.8)}
+@keyframes livePulse{0%,100%{opacity:0.5;transform:scale(1)}50%{opacity:1;transform:scale(1.3)}}
+.q-badge{padding:7px 16px;border-radius:100px;background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.2);font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(200,150,255,0.8)}
+
+/* Layout */
+.main{position:relative;z-index:10;display:grid;grid-template-columns:260px 1fr;flex:1;min-height:0;overflow:hidden}
+
+/* ── SIDEBAR ── */
+.sidebar{position:relative;display:flex;flex-direction:column;padding:24px 16px;overflow-y:auto;overflow-x:hidden;border-right:1px solid rgba(236,72,153,0.12)}
+.sidebar::before{content:'';position:absolute;inset:0;z-index:0;background:linear-gradient(160deg,rgba(236,72,153,0.18) 0%,rgba(168,85,247,0.12) 30%,rgba(236,72,153,0.08) 60%,rgba(100,0,60,0.06) 100%);pointer-events:none}
+.sidebar::after{content:'';position:absolute;inset:0;z-index:0;background:rgba(6,0,13,0.42);backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px);pointer-events:none}
+.sidebar>*{position:relative;z-index:1}
+.sidebar::-webkit-scrollbar{width:3px}
+.sidebar::-webkit-scrollbar-track{background:transparent}
+.sidebar::-webkit-scrollbar-thumb{background:rgba(236,72,153,0.2);border-radius:100px}
+
+.section-label{font-size:0.6rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(236,72,153,0.55);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.section-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(236,72,153,0.25),transparent)}
+
+.skill-card{position:relative;margin-bottom:7px;border-radius:13px;padding:12px 14px;cursor:default;border:1px solid rgba(255,255,255,0.055);background:rgba(255,255,255,0.02);transition:all 0.4s cubic-bezier(0.22,1,0.36,1)}
+.skill-card::before{content:'';position:absolute;inset:0;border-radius:13px;background:linear-gradient(135deg,rgba(236,72,153,0.08),rgba(168,85,247,0.05));opacity:0;transition:opacity 0.4s ease}
+.skill-card.active{border-color:rgba(236,72,153,0.42);background:rgba(236,72,153,0.07);box-shadow:0 0 0 1px rgba(236,72,153,0.08) inset,0 6px 28px rgba(236,72,153,0.1)}
+.skill-card.active::before{opacity:1}
+.skill-card.active::after{content:'';position:absolute;left:0;top:20%;bottom:20%;width:2px;border-radius:100px;background:linear-gradient(180deg,#ec4899,#a855f7)}
+.skill-card.done-strong{border-color:rgba(52,211,153,0.28);background:rgba(52,211,153,0.04)}
+.skill-card.done-average{border-color:rgba(251,191,36,0.24);background:rgba(251,191,36,0.035)}
+.skill-card.done-weak{border-color:rgba(248,113,113,0.24);background:rgba(248,113,113,0.035)}
+
+.skill-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.skill-name{font-size:0.81rem;font-weight:500;color:rgba(255,215,235,0.65);transition:color 0.3s;line-height:1.3}
+.skill-card.active .skill-name{color:rgba(255,235,248,0.98);font-weight:600}
+.skill-card.done-strong .skill-name{color:rgba(52,211,153,0.85)}
+.skill-card.done-average .skill-name{color:rgba(251,191,36,0.8)}
+.skill-card.done-weak .skill-name{color:rgba(248,113,113,0.8)}
+
+.s-badge{font-size:0.52rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;padding:3px 8px;border-radius:100px;flex-shrink:0;transition:all 0.3s ease}
+.s-badge.pending{background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.07)}
+.s-badge.assessing{background:rgba(236,72,153,0.14);color:rgba(255,150,200,0.88);border:1px solid rgba(236,72,153,0.26);animation:assessing 2s ease-in-out infinite}
+@keyframes assessing{0%,100%{opacity:0.65}50%{opacity:1}}
+.s-badge.strong{background:rgba(52,211,153,0.11);color:rgba(52,211,153,0.88);border:1px solid rgba(52,211,153,0.2)}
+.s-badge.average{background:rgba(251,191,36,0.09);color:rgba(251,191,36,0.82);border:1px solid rgba(251,191,36,0.18)}
+.s-badge.weak{background:rgba(248,113,113,0.09);color:rgba(248,113,113,0.82);border:1px solid rgba(248,113,113,0.18)}
+
+.sidebar-footer{margin-top:auto;padding-top:20px;border-top:1px solid rgba(236,72,153,0.08)}
+.prog-labels{display:flex;justify-content:space-between;font-size:0.64rem;color:rgba(255,140,185,0.38);margin-bottom:8px}
+.prog-track{height:3px;background:rgba(255,255,255,0.055);border-radius:100px;overflow:hidden}
+.prog-fill{height:100%;border-radius:100px;background:linear-gradient(90deg,#ec4899,#a855f7,#ec4899);background-size:200% auto;animation:gradShift 3s linear infinite;transition:width 0.9s cubic-bezier(0.34,1.56,0.64,1);width:0%}
+@keyframes gradShift{0%{background-position:0% center}100%{background-position:200% center}}
+
+/* ── CHAT AREA ── */
+.chat-area{display:flex;flex-direction:column;min-height:0;position:relative}
+.chat-area::before{content:'';position:absolute;inset:0;z-index:0;background:rgba(6,0,13,0.22);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);pointer-events:none}
+
+.messages{position:relative;z-index:1;flex:1;overflow-y:auto;padding:28px 44px 20px;display:flex;flex-direction:column;gap:18px;scroll-behavior:smooth}
+.messages::-webkit-scrollbar{width:4px}
+.messages::-webkit-scrollbar-track{background:transparent}
+.messages::-webkit-scrollbar-thumb{background:rgba(236,72,153,0.12);border-radius:100px}
+
+.session-badge{display:flex;justify-content:center;margin-bottom:8px}
+.session-pill{display:inline-flex;align-items:center;gap:7px;padding:7px 18px;border-radius:100px;background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.16);font-size:0.62rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:rgba(190,130,255,0.6);animation:fadeUp 0.6s ease both}
+.s-pill-dot{width:5px;height:5px;border-radius:50%;background:rgba(168,85,247,0.7);animation:livePulse 2s infinite}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+.msg{display:flex;gap:12px;opacity:0;transform:translateY(14px);animation:msgIn 0.45s cubic-bezier(0.22,1,0.36,1) forwards}
+@keyframes msgIn{to{opacity:1;transform:translateY(0)}}
+.msg-user{flex-direction:row-reverse}
+
+.av{width:36px;height:36px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:15px;margin-top:2px}
+.av-ai{background:linear-gradient(135deg,rgba(236,72,153,0.25),rgba(168,85,247,0.25));border:1px solid rgba(236,72,153,0.22);box-shadow:0 0 14px rgba(236,72,153,0.12)}
+.av-user{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.09)}
+
+.bubble-col{display:flex;flex-direction:column;gap:4px;max-width:74%}
+.bubble-who{font-size:0.59rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,130,185,0.32);padding:0 4px}
+.msg-user .bubble-who{text-align:right;color:rgba(255,255,255,0.16)}
+
+.bubble{padding:15px 19px;border-radius:16px;font-size:0.875rem;font-weight:300;line-height:1.78;color:rgba(255,228,242,0.88);position:relative;overflow:hidden}
+.bubble-ai{background:rgba(236,72,153,0.065);border:1px solid rgba(236,72,153,0.13);border-radius:4px 16px 16px 16px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 4px 24px rgba(236,72,153,0.06),inset 0 1px 0 rgba(255,255,255,0.05)}
+.bubble-ai::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,rgba(236,72,153,0.4),rgba(168,85,247,0.3),transparent)}
+.bubble-user{background:rgba(255,255,255,0.042);border:1px solid rgba(255,255,255,0.08);border-radius:16px 4px 16px 16px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:inset 0 1px 0 rgba(255,255,255,0.05);color:rgba(255,240,250,0.8)}
+
+.level-tag{display:inline-flex;align-items:center;gap:5px;align-self:flex-start;font-size:0.57rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:3px 10px;border-radius:100px;margin-top:5px}
+.lt-strong{background:rgba(52,211,153,0.1);color:rgba(52,211,153,0.85);border:1px solid rgba(52,211,153,0.18)}
+.lt-average{background:rgba(251,191,36,0.1);color:rgba(251,191,36,0.8);border:1px solid rgba(251,191,36,0.17)}
+.lt-weak{background:rgba(248,113,113,0.1);color:rgba(248,113,113,0.8);border:1px solid rgba(248,113,113,0.17)}
+
+/* Completion banner */
+.completion-banner{
+  display:none;
+  margin:0 44px;
+  padding:20px 24px;
+  background:linear-gradient(135deg,rgba(52,211,153,0.08),rgba(168,85,247,0.06));
+  border:1px solid rgba(52,211,153,0.2);
+  border-radius:18px;
+  text-align:center;
+  position:relative;z-index:2;
+  flex-shrink:0;
+  animation:fadeUp 0.7s ease both;
+}
+.completion-banner.show{display:block}
+.completion-banner::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;border-radius:18px 18px 0 0;background:linear-gradient(90deg,transparent,rgba(52,211,153,0.5),rgba(168,85,247,0.4),transparent)}
+.cb-emoji{font-size:1.8rem;margin-bottom:8px}
+.cb-title{font-family:'Playfair Display',serif;font-weight:800;font-style:italic;font-size:1.1rem;background:linear-gradient(135deg,#34d399,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px}
+.cb-sub{font-size:0.76rem;font-weight:300;color:rgba(255,200,220,0.45);margin-bottom:16px}
+.cb-cta{
+  display:inline-flex;align-items:center;gap:10px;
+  padding:14px 36px;border-radius:100px;border:none;cursor:pointer;
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:0.88rem;font-weight:700;
+  color:#fff;letter-spacing:0.01em;
+  background:linear-gradient(135deg,#ec4899 0%,#d946a8 50%,#a855f7 100%);
+  background-size:200% auto;
+  box-shadow:0 0 0 1px rgba(236,72,153,0.5),inset 0 1px 0 rgba(255,255,255,0.2),0 8px 32px rgba(236,72,153,0.4);
+  transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1),box-shadow 0.3s ease;
+  animation:ctaBreath 2.5s ease-in-out infinite;
+}
+@keyframes ctaBreath{
+  0%,100%{box-shadow:0 0 0 1px rgba(236,72,153,0.5),inset 0 1px 0 rgba(255,255,255,0.2),0 8px 32px rgba(236,72,153,0.4)}
+  50%{box-shadow:0 0 0 1px rgba(236,72,153,0.7),inset 0 1px 0 rgba(255,255,255,0.25),0 12px 48px rgba(236,72,153,0.6),0 0 60px rgba(168,85,247,0.2)}
+}
+.cb-cta:hover{transform:translateY(-3px) scale(1.04);animation:none;box-shadow:0 0 0 1px rgba(236,72,153,0.7),0 16px 50px rgba(236,72,153,0.55)}
+.cb-arrow{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:0.8rem;transition:transform 0.3s ease}
+.cb-cta:hover .cb-arrow{transform:translateX(4px)}
+
+/* Typing indicator */
+.typing-wrap{display:flex;gap:12px;opacity:0;max-height:0;overflow:hidden;transition:opacity 0.3s ease,max-height 0.35s ease}
+.typing-wrap.show{opacity:1;max-height:80px}
+.typing-bubble{padding:13px 17px;border-radius:4px 16px 16px 16px;background:rgba(236,72,153,0.06);border:1px solid rgba(236,72,153,0.12);backdrop-filter:blur(12px);display:flex;align-items:center;gap:5px}
+.td{width:5px;height:5px;border-radius:50%;background:rgba(236,72,153,0.5);animation:tdot 1.4s ease-in-out infinite}
+.td:nth-child(2){animation-delay:.2s}.td:nth-child(3){animation-delay:.4s}
+@keyframes tdot{0%,100%{transform:translateY(0);opacity:0.35}50%{transform:translateY(-4px);opacity:1}}
+
+/* ── INPUT AREA ── */
+.input-zone{position:relative;z-index:2;flex-shrink:0;padding:16px 44px 20px;background:rgba(6,0,13,0.78);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border-top:1px solid rgba(236,72,153,0.1)}
+.input-shell{display:flex;align-items:flex-end;gap:10px;background:rgba(255,255,255,0.035);border:1px solid rgba(236,72,153,0.2);border-radius:20px;padding:12px 12px 12px 20px;transition:border-color 0.3s ease,box-shadow 0.3s ease,background 0.3s ease;position:relative;overflow:hidden}
+.input-shell::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(236,72,153,0.3),rgba(168,85,247,0.2),transparent);opacity:0;transition:opacity 0.3s ease}
+.input-shell:focus-within{border-color:rgba(236,72,153,0.42);background:rgba(255,255,255,0.05);box-shadow:0 0 0 3px rgba(236,72,153,0.07),0 8px 40px rgba(236,72,153,0.08)}
+.input-shell:focus-within::before{opacity:1}
+.msg-ta{flex:1;background:transparent;border:none;outline:none;color:rgba(255,228,242,0.92);font-family:'Plus Jakarta Sans',sans-serif;font-size:0.88rem;font-weight:300;line-height:1.65;resize:none;max-height:120px;min-height:22px;caret-color:#ec4899}
+.msg-ta::placeholder{color:rgba(255,140,185,0.22)}
+.input-shell.frozen{opacity:0.38;pointer-events:none}
+
+.input-actions{display:flex;gap:8px;align-items:center;flex-shrink:0}
+
+.mic-btn{width:40px;height:40px;border-radius:12px;border:none;cursor:pointer;flex-shrink:0;background:rgba(255,255,255,0.055);border:1px solid rgba(255,255,255,0.09);display:flex;align-items:center;justify-content:center;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1)}
+.mic-btn:hover{background:rgba(236,72,153,0.1);border-color:rgba(236,72,153,0.25);transform:scale(1.06)}
+.mic-btn.recording{background:rgba(236,72,153,0.18);border-color:rgba(236,72,153,0.5);animation:micRing 1.2s ease-out infinite}
+@keyframes micRing{0%{box-shadow:0 0 0 0 rgba(236,72,153,0.5)}70%{box-shadow:0 0 0 10px rgba(236,72,153,0)}100%{box-shadow:0 0 0 0 rgba(236,72,153,0)}}
+.mic-btn svg{width:16px;height:16px;transition:all 0.3s ease}
+.mic-btn.recording svg{stroke:#ec4899 !important}
+
+.send-btn{width:40px;height:40px;border-radius:12px;border:none;cursor:pointer;flex-shrink:0;background:linear-gradient(135deg,#ec4899,#a855f7);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 18px rgba(236,72,153,0.35);transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1)}
+.send-btn:hover{transform:scale(1.1) translateY(-2px);box-shadow:0 8px 28px rgba(236,72,153,0.5)}
+.send-btn:active{transform:scale(0.95)}
+.send-btn:disabled{opacity:0.28;cursor:not-allowed;transform:none;box-shadow:none}
+.send-btn svg{width:15px;height:15px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+
+.input-footer{display:flex;align-items:center;justify-content:space-between;margin-top:10px;font-size:0.65rem;color:rgba(255,130,180,0.25)}
+.hint-kb{padding:2px 7px;border-radius:5px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);font-size:0.6rem;color:rgba(255,255,255,0.18)}
+.mic-status{display:none;align-items:center;gap:6px;font-size:0.65rem;color:rgba(236,72,153,0.75);font-weight:500}
+.mic-status.show{display:flex}
+.mic-wave{display:flex;gap:2px;align-items:center;height:12px}
+.mic-wave span{display:block;width:2px;background:#ec4899;border-radius:1px;animation:mwave 1s ease-in-out infinite}
+.mic-wave span:nth-child(1){height:4px;animation-delay:0s}.mic-wave span:nth-child(2){height:10px;animation-delay:.15s}.mic-wave span:nth-child(3){height:6px;animation-delay:.3s}.mic-wave span:nth-child(4){height:12px;animation-delay:.45s}.mic-wave span:nth-child(5){height:5px;animation-delay:.6s}
+@keyframes mwave{0%,100%{transform:scaleY(0.5)}50%{transform:scaleY(1)}}
+
+/* REPORT GENERATION ORB OVERLAY */
+.orb-overlay{
+  position:fixed;inset:0;z-index:500;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(4,0,10,0.96);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  opacity:0;pointer-events:none;
+  transition:opacity 0.5s ease;
+}
+.orb-overlay.active{opacity:1;pointer-events:all}
+
+.ai-orb-wrap{position:relative;width:220px;height:220px;margin-bottom:44px}
+
+.ai-orb{
+  position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle at 38% 35%,
+    rgba(255,100,180,0.9) 0%,
+    rgba(236,72,153,0.7) 20%,
+    rgba(168,85,247,0.6) 45%,
+    rgba(88,28,220,0.5) 70%,
+    rgba(30,0,60,0.4) 100%
+  );
+  box-shadow:
+    0 0 60px rgba(236,72,153,0.7),
+    0 0 120px rgba(168,85,247,0.4),
+    0 0 200px rgba(236,72,153,0.2),
+    inset 0 0 60px rgba(255,150,200,0.15);
+  animation:orbPulse 2.5s ease-in-out infinite, orbRotate 10s linear infinite;
+}
+.ai-orb::before{
+  content:'';position:absolute;inset:-2px;border-radius:50%;
+  background:
+    radial-gradient(ellipse 30% 60% at 30% 40%, rgba(255,180,220,0.4) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 30% at 70% 30%, rgba(200,150,255,0.3) 0%, transparent 50%);
+  animation:surfaceShimmer 3.5s ease-in-out infinite alternate;
+}
+.ai-orb::after{content:'';position:absolute;inset:3px;border-radius:50%;border:1px solid rgba(255,150,200,0.2);box-shadow:inset 0 0 30px rgba(255,100,180,0.15)}
+
+.ring{position:absolute;border-radius:50%;border:1px solid rgba(236,72,153,0.15);top:50%;left:50%;transform:translate(-50%,-50%)}
+.ring1{width:260px;height:260px;animation:ringPulse 2.5s ease-in-out infinite}
+.ring2{width:300px;height:300px;animation:ringPulse 2.5s ease-in-out infinite 0.5s}
+.ring3{width:340px;height:340px;animation:ringPulse 2.5s ease-in-out infinite 1s;border-color:rgba(168,85,247,0.08)}
+
+.orbit-dot{position:absolute;top:50%;left:50%;width:280px;height:280px;margin:-140px 0 0 -140px;animation:orbitSpin 5s linear infinite}
+.orbit-dot::before{content:'';position:absolute;top:0;left:50%;width:6px;height:6px;border-radius:50%;background:linear-gradient(135deg,#ec4899,#a855f7);box-shadow:0 0 10px rgba(236,72,153,0.9);transform:translate(-50%,-50%)}
+.orbit-dot2{position:absolute;top:50%;left:50%;width:240px;height:240px;margin:-120px 0 0 -120px;animation:orbitSpin 8s linear infinite reverse}
+.orbit-dot2::before{content:'';position:absolute;top:50%;left:0;width:4px;height:4px;border-radius:50%;background:rgba(168,85,247,0.9);box-shadow:0 0 8px rgba(168,85,247,0.9);transform:translate(-50%,-50%)}
+
+@keyframes orbPulse{
+  0%,100%{box-shadow:0 0 60px rgba(236,72,153,0.7),0 0 120px rgba(168,85,247,0.4),0 0 200px rgba(236,72,153,0.2),inset 0 0 60px rgba(255,150,200,0.15)}
+  50%{box-shadow:0 0 90px rgba(236,72,153,0.85),0 0 160px rgba(168,85,247,0.5),0 0 260px rgba(236,72,153,0.25),inset 0 0 80px rgba(255,150,200,0.22)}
+}
+@keyframes orbRotate{0%{filter:hue-rotate(0deg)}100%{filter:hue-rotate(30deg)}}
+@keyframes surfaceShimmer{0%{opacity:0.7}100%{opacity:1}}
+@keyframes ringPulse{0%,100%{opacity:0.5;transform:translate(-50%,-50%) scale(1)}50%{opacity:0.12;transform:translate(-50%,-50%) scale(1.05)}}
+@keyframes orbitSpin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+
+.orb-text{text-align:center;position:relative;z-index:2}
+.orb-title{
+  font-family:'Playfair Display',serif;font-weight:700;font-style:italic;
+  font-size:1.4rem;letter-spacing:-0.02em;
+  background:linear-gradient(135deg,#fff,rgba(255,200,230,0.8));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  margin-bottom:10px;transition:opacity 0.3s ease;
+}
+.orb-steps{display:flex;flex-direction:column;gap:8px;margin-bottom:18px;min-height:100px;align-items:center;justify-content:center}
+.orb-step{
+  display:flex;align-items:center;gap:10px;
+  font-size:0.72rem;font-weight:400;color:rgba(255,170,205,0.35);
+  transition:all 0.5s ease;letter-spacing:0.04em;
+}
+.orb-step.active{color:rgba(255,200,225,0.85);font-weight:500}
+.orb-step.done{color:rgba(52,211,153,0.6)}
+.step-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.12);flex-shrink:0;transition:all 0.4s ease}
+.orb-step.active .step-dot{background:#ec4899;box-shadow:0 0 8px rgba(236,72,153,0.8);animation:livePulse 1.5s infinite}
+.orb-step.done .step-dot{background:#34d399;box-shadow:0 0 6px rgba(52,211,153,0.6);animation:none}
+.orb-sub{font-size:0.68rem;font-weight:300;color:rgba(255,150,190,0.3);letter-spacing:0.06em}
+</style>
+</head>
+<body>
+
+<div class="bg-layer"><div class="bg-mesh"></div><div class="bg-grid"></div></div>
+<div class="noise"></div>
+<div class="scan-line"></div>
+<div class="bracket tl"></div><div class="bracket tr"></div>
+<div class="bracket bl"></div><div class="bracket br"></div>
+
+<!-- REPORT GENERATION ORB OVERLAY -->
+<div class="orb-overlay" id="orbOverlay">
+  <div class="ai-orb-wrap">
+    <div class="ring ring1"></div>
+    <div class="ring ring2"></div>
+    <div class="ring ring3"></div>
+    <div class="orbit-dot"></div>
+    <div class="orbit-dot2"></div>
+    <div class="ai-orb"></div>
+  </div>
+  <div class="orb-text">
+    <div class="orb-title" id="orbTitle">Building your dashboard</div>
+    <div class="orb-steps">
+      <div class="orb-step active" id="step0"><div class="step-dot"></div>Scoring your performance</div>
+      <div class="orb-step" id="step1"><div class="step-dot"></div>Identifying skill gaps</div>
+      <div class="orb-step" id="step2"><div class="step-dot"></div>Generating learning plan</div>
+      <div class="orb-step" id="step3"><div class="step-dot"></div>Curating resources</div>
+    </div>
+    <div class="orb-sub">This takes a moment — we're personalising everything just for you</div>
+  </div>
+</div>
+
+<!-- PAGE -->
+<div class="page-wrap">
+  <div class="topbar">
+    <a class="logo" href="index.html">
+      <div class="logo-mark">⚡</div>
+      <span class="logo-name">SkillScan AI</span>
+    </a>
+    <div class="topbar-right">
+      <div class="live-pill"><div class="live-dot" id="liveDot"></div><span id="liveLabel">Live Interview</span></div>
+      <div class="q-badge">Q&nbsp;<span id="qNum">0</span></div>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="section-label">Skills to Assess</div>
+      <div id="skillList"></div>
+      <div class="sidebar-footer">
+        <div class="prog-labels"><span>Progress</span><span id="progPct">0%</span></div>
+        <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
+      </div>
+    </div>
+
+    <!-- CHAT -->
+    <div class="chat-area">
+      <div class="messages" id="messages">
+        <div class="session-badge">
+          <div class="session-pill"><div class="s-pill-dot"></div>Assessment in progress</div>
+        </div>
+        <div class="typing-wrap" id="typingWrap">
+          <div class="av av-ai">🤖</div>
+          <div class="typing-bubble"><div class="td"></div><div class="td"></div><div class="td"></div></div>
+        </div>
+      </div>
+
+      <!-- COMPLETION BANNER -->
+      <div class="completion-banner" id="completionBanner">
+        <div class="cb-emoji">🎉</div>
+        <div class="cb-title">Assessment Complete!</div>
+        <div class="cb-sub">Your full performance report and personalised learning plan are ready to generate.</div>
+        <button class="cb-cta" id="viewReportBtn">
+          View My Performance Dashboard
+          <span class="cb-arrow">→</span>
+        </button>
+      </div>
+
+      <div class="input-zone">
+        <div class="input-shell" id="inputShell">
+          <textarea class="msg-ta" id="msgTa" placeholder="Type your answer here..." rows="1"></textarea>
+          <div class="input-actions">
+            <button class="mic-btn" id="micBtn" title="Speak your answer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,180,210,0.55)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="2" width="6" height="11" rx="3"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="22"/>
+                <line x1="8" y1="22" x2="16" y2="22"/>
+              </svg>
+            </button>
+            <button class="send-btn" id="sendBtn" disabled>
+              <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="input-footer">
+          <div class="mic-status" id="micStatus">
+            <div class="mic-wave"><span></span><span></span><span></span><span></span><span></span></div>
+            Listening… speak your answer
+          </div>
+          <span id="inputHint">Be specific — treat this like a real interview</span>
+          <span><kbd class="hint-kb">Enter</kbd> to send</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+const API = 'http://127.0.0.1:8000';
+
+let jd     = sessionStorage.getItem('jd') || '';
+let resume = sessionStorage.getItem('resume') || '';
+let skills = [];
+try { skills = JSON.parse(sessionStorage.getItem('skills') || '[]'); } catch(e){}
+
+let history      = [];
+let qCount       = 0;
+let currentSkill = '';
+let assessDone   = false;
+
+// Per-skill state tracker
+let SS = {};
+
+// ── SAFETY NET: track total answers per skill across frontend ──
+// This is the fallback in case backend is_complete never fires
+let totalAnswerCount = 0;
+const MAX_TOTAL_QUESTIONS = 8; // absolute cap per skill (safety net)
+
+// ═══════════════════════════════════════════════════════
+// ELEMENTS
+// ═══════════════════════════════════════════════════════
+const messagesEl       = document.getElementById('messages');
+const typingWrap       = document.getElementById('typingWrap');
+const msgTa            = document.getElementById('msgTa');
+const sendBtn          = document.getElementById('sendBtn');
+const micBtn           = document.getElementById('micBtn');
+const micStatus        = document.getElementById('micStatus');
+const qNum             = document.getElementById('qNum');
+const skillList        = document.getElementById('skillList');
+const progFill         = document.getElementById('progFill');
+const progPct          = document.getElementById('progPct');
+const inputShell       = document.getElementById('inputShell');
+const completionBanner = document.getElementById('completionBanner');
+const viewReportBtn    = document.getElementById('viewReportBtn');
+const orbOverlay       = document.getElementById('orbOverlay');
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+function init() {
+  if (!jd || !resume) { window.location.href = 'upload.html'; return; }
+  if (!skills.length) skills = ['Core Knowledge', 'Problem Solving', 'Communication'];
+
+  skills.forEach(s => {
+    SS[s] = { level: null, answerCount: 0, weakStreak: 0, strongCount: 0, avgCount: 0 };
+  });
+
+  renderSidebar();
+  currentSkill = skills[0];
+  setActive(currentSkill);
+  startInterview();
+}
+
+// ═══════════════════════════════════════════════════════
+// SIDEBAR
+// ═══════════════════════════════════════════════════════
+function renderSidebar() {
+  skillList.innerHTML = '';
+  skills.forEach((s, i) => {
+    const d = document.createElement('div');
+    d.className = 'skill-card';
+    d.id = `sc-${i}`;
+    d.innerHTML = `
+      <div class="skill-row">
+        <div class="skill-name">${s}</div>
+        <div class="s-badge pending" id="sb-${i}">Pending</div>
+      </div>`;
+    skillList.appendChild(d);
+  });
+}
+
+function setActive(skill) {
+  currentSkill = skill;
+  totalAnswerCount = 0; // reset per-skill counter when switching
+  const idx = skills.indexOf(skill);
+  skills.forEach((s, i) => {
+    const card  = document.getElementById(`sc-${i}`);
+    const badge = document.getElementById(`sb-${i}`);
+    if (!card) return;
+    if (s === skill && SS[s].level === null) {
+      card.className = 'skill-card active';
+      badge.className = 's-badge assessing';
+      badge.textContent = 'Now';
+    }
+  });
+}
+
+function deriveLevel(st) {
+  // Derive a final level from skill state
+  if (st.strongCount >= 2) return 'STRONG';
+  if (st.weakStreak >= 2)  return 'WEAK';
+  if (st.strongCount >= 1) return 'AVERAGE';
+  return st.weakStreak >= 1 ? 'WEAK' : 'AVERAGE';
+}
+
+function finalizeSkill(skill, finalLevel) {
+  const idx = skills.indexOf(skill);
+  if (SS[skill]) SS[skill].level = finalLevel;
+  const card  = document.getElementById(`sc-${idx}`);
+  const badge = document.getElementById(`sb-${idx}`);
+  if (!card || !badge) return;
+
+  const lc = finalLevel.toLowerCase();
+  card.className = `skill-card done-${lc}`;
+  badge.className = `s-badge ${lc}`;
+  badge.textContent = finalLevel.charAt(0) + finalLevel.slice(1).toLowerCase();
+  updateProgress();
+}
+
+function updateProgress() {
+  const done = skills.filter(s => SS[s] && SS[s].level !== null).length;
+  const pct  = Math.round((done / skills.length) * 100);
+  progFill.style.width = pct + '%';
+  progPct.textContent  = pct + '%';
+}
+
+// ═══════════════════════════════════════════════════════
+// MESSAGES
+// ═══════════════════════════════════════════════════════
+function addMsg(role, text, level) {
+  const isAI = role === 'assistant';
+  const div  = document.createElement('div');
+  div.className = `msg msg-${isAI ? 'ai' : 'user'}`;
+
+  const av  = `<div class="av ${isAI ? 'av-ai' : 'av-user'}">${isAI ? '🤖' : '🧑'}</div>`;
+  const who = isAI ? 'SkillScan AI' : 'You';
+
+  let ltag = '';
+  if (level && !isAI) {
+    const icons = { STRONG: '✦', AVERAGE: '◈', WEAK: '○' };
+    const icon  = icons[level] || '◈';
+    ltag = `<div class="level-tag lt-${level.toLowerCase()}">${icon} ${level.charAt(0)+level.slice(1).toLowerCase()}</div>`;
+  }
+
+  div.innerHTML = `${isAI ? av : ''}
+    <div class="bubble-col">
+      <div class="bubble-who">${who}</div>
+      <div class="bubble ${isAI ? 'bubble-ai' : 'bubble-user'}">${text}</div>
+      ${ltag}
+    </div>
+    ${!isAI ? av : ''}`;
+
+  messagesEl.insertBefore(div, typingWrap);
+  requestAnimationFrame(() => { messagesEl.scrollTop = messagesEl.scrollHeight; });
+}
+
+function showTyping() { typingWrap.classList.add('show'); messagesEl.scrollTop = messagesEl.scrollHeight; }
+function hideTyping() { typingWrap.classList.remove('show'); }
+
+// ═══════════════════════════════════════════════════════
+// COMPLETION FLOW
+// ═══════════════════════════════════════════════════════
+function triggerCompletion() {
+  if (assessDone) return;
+  assessDone = true;
+
+  // Finalize all remaining skills that haven't been scored yet
+  skills.forEach(s => {
+    if (SS[s] && SS[s].level === null) {
+      finalizeSkill(s, deriveLevel(SS[s]));
+    }
+  });
+
+  // Update topbar to show complete
+  document.getElementById('liveLabel').textContent = 'Complete';
+  const dot = document.getElementById('liveDot');
+  dot.style.animation  = 'none';
+  dot.style.background = '#34d399';
+  dot.style.boxShadow  = '0 0 6px rgba(52,211,153,0.8)';
+
+  // Freeze input
+  inputShell.classList.add('frozen');
+  sendBtn.disabled = true;
+
+  // Show completion banner
+  setTimeout(() => {
+    completionBanner.classList.add('show');
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }, 600);
+}
+
+// ── VIEW REPORT BUTTON ──
+viewReportBtn.addEventListener('click', generateReport);
+
+async function generateReport() {
+  orbOverlay.classList.add('active');
+
+  const stepEls = [
+    document.getElementById('step0'),
+    document.getElementById('step1'),
+    document.getElementById('step2'),
+    document.getElementById('step3'),
+  ];
+  const titles = [
+    'Scoring your performance',
+    'Identifying skill gaps',
+    'Generating learning plan',
+    'Curating resources'
+  ];
+  const orbTitle = document.getElementById('orbTitle');
+
+  let stepIdx = 0;
+  function advanceStep() {
+    if (stepIdx > 0) {
+      stepEls[stepIdx - 1].classList.remove('active');
+      stepEls[stepIdx - 1].classList.add('done');
+    }
+    if (stepIdx < stepEls.length) {
+      stepEls[stepIdx].classList.add('active');
+      orbTitle.style.opacity = '0';
+      setTimeout(() => {
+        orbTitle.textContent = titles[stepIdx] || 'Finalising…';
+        orbTitle.style.opacity = '1';
+      }, 200);
+      stepIdx++;
+    }
+  }
+
+  orbTitle.style.transition = 'opacity 0.25s ease';
+  advanceStep();
+  const stepTimer1 = setTimeout(advanceStep, 2000);
+  const stepTimer2 = setTimeout(advanceStep, 4000);
+  const stepTimer3 = setTimeout(advanceStep, 6000);
+
+  const skillResults = {};
+  skills.forEach(s => {
+    skillResults[s] = SS[s] || { level: 'AVERAGE', answerCount: 2, strongCount: 0, weakStreak: 0, avgCount: 2 };
+  });
+
+  const startTime = Date.now();
+
+  try {
+    const res = await fetch(`${API}/score`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        job_description: jd,
+        resume,
+        skills,
+        skill_results: skillResults,
+        conversation_history: history
+      })
+    });
+    const reportData = await res.json();
+
+    sessionStorage.setItem('reportData', JSON.stringify(reportData));
+    sessionStorage.setItem('skillResults', JSON.stringify(skillResults));
+
+    const elapsed  = Date.now() - startTime;
+    const minWait  = 7500;
+    const remaining = Math.max(0, minWait - elapsed);
+
+    setTimeout(() => {
+      clearTimeout(stepTimer1);
+      clearTimeout(stepTimer2);
+      clearTimeout(stepTimer3);
+      window.location.href = 'report.html';
+    }, remaining + 500);
+
+  } catch(e) {
+    console.error('Score API error:', e);
+    const fallbackReport = buildFallbackReport(skillResults);
+    sessionStorage.setItem('reportData', JSON.stringify(fallbackReport));
+    sessionStorage.setItem('skillResults', JSON.stringify(skillResults));
+
+    setTimeout(() => {
+      window.location.href = 'report.html';
+    }, 4000);
+  }
+}
+
+function buildFallbackReport(skillResults) {
+  const scoreMap = { STRONG: 85, AVERAGE: 58, WEAK: 28 };
+  const skillScores = {};
+  skills.forEach(s => {
+    const sr = skillResults[s] || {};
+    const lv = sr.level || 'AVERAGE';
+    const base = scoreMap[lv] || 58;
+    const bonus = Math.min((sr.strongCount || 0) * 4, 10);
+    skillScores[s] = Math.min(95, base + bonus);
+  });
+  const total = Math.round(Object.values(skillScores).reduce((a, b) => a + b, 0) / skills.length);
+  const proficient = skills.filter(s => skillScores[s] >= 78);
+  const developing = skills.filter(s => skillScores[s] >= 52 && skillScores[s] < 78);
+  const gaps = skills.filter(s => skillScores[s] < 52);
+
+  const plan = [...gaps, ...developing].map((s, i) => ({
+    skill: s,
+    gap_reason: `Assessment indicates developing proficiency in ${s}.`,
+    adjacent_skills: [],
+    resources: [
+      { title: `${s} — Complete Guide`, url: 'https://www.freecodecamp.org', type: 'Course' },
+      { title: `Practice ${s}`, url: 'https://exercism.org', type: 'Practice' }
+    ],
+    tip: `Build 2–3 hands-on projects to solidify your ${s} fundamentals.`,
+    weeks: (i + 1) * 2
+  }));
+
+  return {
+    overall_score: total,
+    skill_scores: skillScores,
+    proficient,
+    developing,
+    gaps,
+    learning_plan: plan,
+    summary: `Strong areas include ${proficient.join(', ') || 'core foundations'}. Focus growth on ${gaps.join(', ') || 'advanced topics'} to reach the next level.`
+  };
+}
+
+// ═══════════════════════════════════════════════════════
+// API CALLS
+// ═══════════════════════════════════════════════════════
+async function startInterview() {
+  showTyping();
+  sendBtn.disabled = true;
+
+  try {
+    const res = await fetch(`${API}/assess`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        job_description: jd,
+        resume,
+        conversation_history: [],
+        user_message: '',
+        skills,
+        current_skill: currentSkill,
+        skill_state: SS[currentSkill] || {}
+      })
+    });
+    const data = await res.json();
+    hideTyping();
+    addMsg('assistant', data.message);
+    history.push({ role: 'assistant', content: data.message });
+    qCount = 1;
+    qNum.textContent = qCount;
+    sendBtn.disabled = false;
+    msgTa.focus();
+  } catch (e) {
+    hideTyping();
+    const fb = `Hi! Let's get started. Tell me about a recent project where you demonstrated ${currentSkill} — what was the challenge and how did you tackle it?`;
+    addMsg('assistant', fb);
+    history.push({ role: 'assistant', content: fb });
+    qCount = 1;
+    qNum.textContent = qCount;
+    sendBtn.disabled = false;
+    msgTa.focus();
+  }
+}
+
+async function sendMessage() {
+  const text = msgTa.value.trim();
+  if (!text || sendBtn.disabled || assessDone) return;
+
+  msgTa.value = '';
+  msgTa.style.height = 'auto';
+  sendBtn.disabled = true;
+
+  addMsg('user', text, null);
+  history.push({ role: 'user', content: text });
+  showTyping();
+
+  totalAnswerCount++;
+
+  const stateToSend = SS[currentSkill] || { strongCount: 0, weakStreak: 0, answerCount: 0, avgCount: 0 };
+
+  try {
+    const res = await fetch(`${API}/assess`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        job_description: jd,
+        resume,
+        conversation_history: history.slice(0, -1),
+        user_message: text,
+        skills,
+        current_skill: currentSkill,
+        skill_state: stateToSend
+      })
+    });
+
+    const data = await res.json();
+    hideTyping();
+
+    const level = data.level;
+
+    if (level) {
+      // Inject level tag into last user message bubble
+      const userMsgs = messagesEl.querySelectorAll('.msg-user');
+      const lastUser = userMsgs[userMsgs.length - 1];
+      if (lastUser) {
+        const existing = lastUser.querySelector('.level-tag');
+        if (!existing) {
+          const icons   = { STRONG: '✦', AVERAGE: '◈', WEAK: '○' };
+          const icon    = icons[level] || '◈';
+          const ltag    = document.createElement('div');
+          ltag.className = `level-tag lt-${level.toLowerCase()}`;
+          ltag.innerHTML = `${icon} ${level.charAt(0)+level.slice(1).toLowerCase()}`;
+          const col = lastUser.querySelector('.bubble-col');
+          if (col) col.appendChild(ltag);
+        }
+      }
+
+      // Update skill state from backend response
+      if (data.updated_state && SS[currentSkill]) {
+        SS[currentSkill].strongCount  = data.updated_state.strongCount  ?? SS[currentSkill].strongCount;
+        SS[currentSkill].weakStreak   = data.updated_state.weakStreak   ?? SS[currentSkill].weakStreak;
+        SS[currentSkill].answerCount  = data.updated_state.answerCount  ?? SS[currentSkill].answerCount;
+        SS[currentSkill].avgCount     = data.updated_state.avgCount     ?? SS[currentSkill].avgCount;
+      }
+
+      // Handle skill switch (not last skill)
+      if (data.switch_skill && data.next_skill && data.next_skill !== currentSkill) {
+        finalizeSkill(currentSkill, deriveLevel(SS[currentSkill]));
+        if (skills.includes(data.next_skill)) {
+          setActive(data.next_skill);
+        }
+      }
+    }
+
+    addMsg('assistant', data.message);
+    history.push({ role: 'assistant', content: data.message });
+    qCount++;
+    qNum.textContent = qCount;
+
+    // ── PRIMARY COMPLETION CHECK: backend signals done ──
+    if (data.is_complete) {
+      finalizeSkill(currentSkill, deriveLevel(SS[currentSkill]));
+      setTimeout(triggerCompletion, 1200);
+      return; // don't re-enable input
+    }
+
+    // ── SAFETY NET: if stuck on last skill too long, force complete ──
+    const currentIdx = skills.indexOf(currentSkill);
+    const isLastSkill = (currentIdx === skills.length - 1);
+    if (isLastSkill && totalAnswerCount >= MAX_TOTAL_QUESTIONS) {
+      console.warn('Safety net triggered: forcing completion after', totalAnswerCount, 'answers on last skill');
+      finalizeSkill(currentSkill, deriveLevel(SS[currentSkill]));
+      setTimeout(triggerCompletion, 1200);
+      return;
+    }
+
+    sendBtn.disabled = false;
+    msgTa.focus();
+
+  } catch (e) {
+    hideTyping();
+    addMsg('assistant', "Connection hiccup — please try again.");
+    sendBtn.disabled = false;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// MICROPHONE
+// ═══════════════════════════════════════════════════════
+let recognition  = null;
+let isRecording  = false;
+let accumulatedText = '';
+let sessionFinal    = '';
+
+function initMic() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    micBtn.style.opacity = '0.3';
+    micBtn.style.cursor  = 'not-allowed';
+    micBtn.title         = 'Speech recognition not supported in this browser';
+    return;
+  }
+
+  recognition = new SR();
+  recognition.continuous      = true;
+  recognition.interimResults  = true;
+  recognition.lang            = 'en-US';
+  recognition.maxAlternatives = 1;
+
+  recognition.onresult = (e) => {
+    let interimThisEvent = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const transcript = e.results[i][0].transcript;
+      if (e.results[i].isFinal) {
+        sessionFinal += (sessionFinal ? ' ' : '') + transcript.trim();
+      } else {
+        interimThisEvent = transcript;
+      }
+    }
+    const displayParts = [];
+    if (accumulatedText)   displayParts.push(accumulatedText);
+    if (sessionFinal)      displayParts.push(sessionFinal);
+    if (interimThisEvent)  displayParts.push(interimThisEvent);
+    const display = displayParts.join(' ').trim();
+    msgTa.value = display;
+    autoResizeTa();
+    sendBtn.disabled = !msgTa.value.trim();
+  };
+
+  recognition.onerror = (e) => {
+    if (e.error === 'no-speech') return;
+    stopRec();
+  };
+
+  recognition.onend = () => {
+    if (isRecording) {
+      if (sessionFinal) {
+        accumulatedText = accumulatedText ? accumulatedText + ' ' + sessionFinal : sessionFinal;
+        sessionFinal = '';
+      }
+      try { recognition.start(); } catch(err) { stopRec(); }
+    }
+  };
+}
+
+function startRec() {
+  if (!recognition) return;
+  isRecording = true;
+  sessionFinal = '';
+  accumulatedText = msgTa.value.trim();
+  micBtn.classList.add('recording');
+  micStatus.classList.add('show');
+  document.getElementById('inputHint').style.visibility = 'hidden';
+  try { recognition.start(); } catch(e) {}
+}
+
+function stopRec() {
+  isRecording = false;
+  if (sessionFinal) {
+    accumulatedText = accumulatedText ? accumulatedText + ' ' + sessionFinal : sessionFinal;
+    sessionFinal = '';
+  }
+  micBtn.classList.remove('recording');
+  micStatus.classList.remove('show');
+  document.getElementById('inputHint').style.visibility = '';
+  try { recognition.stop(); } catch(e) {}
+}
+
+micBtn.addEventListener('click', () => {
+  isRecording ? stopRec() : startRec();
+});
+
+// ═══════════════════════════════════════════════════════
+// INPUT HANDLING
+// ═══════════════════════════════════════════════════════
+function autoResizeTa() {
+  msgTa.style.height = 'auto';
+  msgTa.style.height = Math.min(msgTa.scrollHeight, 120) + 'px';
+}
+
+msgTa.addEventListener('input', () => {
+  sendBtn.disabled = !msgTa.value.trim();
+  autoResizeTa();
+  if (!isRecording) { accumulatedText = ''; sessionFinal = ''; }
+});
+
+msgTa.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    if (!sendBtn.disabled) sendMessage();
+  }
+});
+
+sendBtn.addEventListener('click', sendMessage);
+
+// ═══════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════
+initMic();
+init();
+</script>
+</body>
+</html>

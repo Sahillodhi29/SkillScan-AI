@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SkillScan AI — Begin Assessment</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;0,900;1,700;1,800&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;min-height:100%;background:#08000f;color:#fff;font-family:'Plus Jakarta Sans',sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+
+/* ── Page transition in ── */
+.page-wrap{opacity:0;transform:scale(0.96);animation:pageIn 0.7s cubic-bezier(0.22,1,0.36,1) 0.05s forwards}
+@keyframes pageIn{to{opacity:1;transform:scale(1)}}
+
+/* ── Noise ── */
+.noise{position:fixed;inset:0;z-index:100;pointer-events:none;opacity:0.03;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='250' height='250'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.88' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='250' height='250' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+/* ── Grid ── */
+.grid{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(236,72,153,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(236,72,153,0.04) 1px,transparent 1px);background-size:76px 76px;mask-image:radial-gradient(ellipse 90% 90% at 50% 50%,black 10%,transparent 80%)}
+
+/* ── Orbs ── */
+.orb{position:fixed;border-radius:50%;pointer-events:none;z-index:0}
+.orb1{width:800px;height:800px;top:-250px;left:-220px;background:radial-gradient(circle,rgba(236,72,153,0.11) 0%,transparent 60%);animation:o1 24s ease-in-out infinite}
+.orb2{width:600px;height:600px;bottom:-180px;right:-160px;background:radial-gradient(circle,rgba(168,85,247,0.09) 0%,transparent 60%);animation:o2 30s ease-in-out infinite}
+@keyframes o1{0%,100%{transform:translate(0,0)}50%{transform:translate(60px,40px)}}
+@keyframes o2{0%,100%{transform:translate(0,0)}50%{transform:translate(-50px,-40px)}}
+
+/* ── Corner brackets ── */
+.b{position:fixed;width:42px;height:42px;z-index:15;pointer-events:none}
+.b::before,.b::after{content:'';position:absolute;background:rgba(236,72,153,0.28)}
+.tl{top:22px;left:22px}.tl::before{top:0;left:0;width:100%;height:1px}.tl::after{top:0;left:0;width:1px;height:100%}
+.tr{top:22px;right:22px}.tr::before{top:0;right:0;width:100%;height:1px}.tr::after{top:0;right:0;width:1px;height:100%}
+.bl{bottom:22px;left:22px}.bl::before{bottom:0;left:0;width:100%;height:1px}.bl::after{bottom:0;left:0;width:1px;height:100%}
+.br{bottom:22px;right:22px}.br::before{bottom:0;right:0;width:100%;height:1px}.br::after{bottom:0;right:0;width:1px;height:100%}
+
+/* ── Logo ── */
+.logo{position:fixed;top:26px;left:30px;z-index:20;display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo-mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#ec4899,#a855f7);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;box-shadow:0 0 16px rgba(236,72,153,0.3)}
+.logo-name{font-family:'Plus Jakarta Sans',sans-serif;font-size:0.88rem;font-weight:600;background:linear-gradient(135deg,rgba(255,200,230,0.9),rgba(220,180,255,0.7));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+/* ── Main layout ── */
+.main{
+  position:relative;z-index:10;
+  min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:100px 24px 60px;
+}
+
+/* ── Header ── */
+.header{text-align:center;margin-bottom:52px}
+.step-label{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:0.68rem;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;
+  color:rgba(255,160,200,0.6);margin-bottom:18px;
+}
+.step-line{width:28px;height:1px;background:linear-gradient(90deg,transparent,rgba(236,72,153,0.5))}
+.step-line.r{background:linear-gradient(90deg,rgba(236,72,153,0.5),transparent)}
+.title{
+  font-family:'Playfair Display',serif;font-weight:800;font-style:italic;
+  font-size:clamp(2.2rem,4.5vw,3.8rem);
+  line-height:1.05;letter-spacing:-0.02em;
+  background:linear-gradient(160deg,#fff 0%,rgba(255,210,235,0.75) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  margin-bottom:12px;
+}
+.subtitle{font-size:0.9rem;font-weight:300;color:rgba(255,180,210,0.42);letter-spacing:0.01em}
+
+/* ── Cards grid ── */
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:20px;width:100%;max-width:860px;margin-bottom:36px}
+
+/* ── Card base ── */
+.card{
+  background:rgba(255,255,255,0.022);
+  border:1px solid rgba(236,72,153,0.18);
+  border-radius:20px;padding:28px;
+  transition:border-color 0.3s ease,background 0.3s ease,box-shadow 0.3s ease;
+  position:relative;overflow:visible;
+}
+.card::before{
+  content:'';position:absolute;inset:0;border-radius:20px;
+  background:linear-gradient(135deg,rgba(236,72,153,0.05),transparent 60%);
+  opacity:0;transition:opacity 0.3s ease;
+}
+.card:hover{border-color:rgba(236,72,153,0.38);background:rgba(255,255,255,0.03);box-shadow:0 8px 40px rgba(236,72,153,0.08)}
+.card:hover::before{opacity:1}
+
+.card-label{
+  display:flex;align-items:center;gap:8px;
+  font-size:0.68rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;
+  color:rgba(236,72,153,0.7);margin-bottom:20px;
+}
+.card-num{
+  width:22px;height:22px;border-radius:6px;
+  background:rgba(236,72,153,0.15);border:1px solid rgba(236,72,153,0.25);
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.65rem;font-weight:700;color:rgba(236,72,153,0.9);flex-shrink:0;
+}
+.card-title{font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;color:rgba(255,235,245,0.9);margin-bottom:6px}
+.card-desc{font-size:0.75rem;font-weight:300;color:rgba(255,180,210,0.4);margin-bottom:20px;line-height:1.6}
+
+/* ── JD Textarea ── */
+.jd-area{
+  width:100%;height:180px;
+  background:rgba(255,255,255,0.03);
+  border:1px solid rgba(236,72,153,0.15);
+  border-radius:12px;padding:16px;
+  color:rgba(255,230,240,0.85);font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:0.82rem;font-weight:300;line-height:1.7;
+  resize:none;outline:none;
+  position:relative;z-index:20;
+  transition:border-color 0.3s ease,box-shadow 0.3s ease;
+  caret-color:#ec4899;
+}
+.jd-area::placeholder{color:rgba(255,150,190,0.28)}
+.jd-area:focus{border-color:rgba(236,72,153,0.4);box-shadow:0 0 0 3px rgba(236,72,153,0.07)}
+
+/* ── Drop zone ── */
+.dropzone{
+  width:100%;height:180px;
+  background:rgba(255,255,255,0.02);
+  border:1.5px dashed rgba(236,72,153,0.22);
+  border-radius:12px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  cursor:pointer;transition:all 0.3s ease;position:relative;overflow:hidden;
+}
+.dropzone:hover,.dropzone.drag-over{
+  border-color:rgba(236,72,153,0.5);
+  background:rgba(236,72,153,0.04);
+  box-shadow:0 0 30px rgba(236,72,153,0.06);
+}
+.dropzone.has-file{border-style:solid;border-color:rgba(236,72,153,0.45);background:rgba(236,72,153,0.05)}
+.drop-icon{
+  width:44px;height:44px;border-radius:12px;
+  background:rgba(236,72,153,0.12);border:1px solid rgba(236,72,153,0.22);
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+  margin:0 auto;
+  transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+.dropzone:hover .drop-icon{transform:translateY(-3px) scale(1.08)}
+.drop-text{font-size:0.8rem;font-weight:500;color:rgba(255,200,225,0.6);text-align:center;line-height:1.5}
+.drop-sub{font-size:0.68rem;color:rgba(255,160,200,0.35);font-weight:300}
+.drop-formats{
+  display:flex;gap:6px;margin-top:4px;
+}
+.fmt-badge{
+  padding:3px 10px;border-radius:100px;
+  background:rgba(236,72,153,0.1);border:1px solid rgba(236,72,153,0.2);
+  font-size:0.6rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;
+  color:rgba(236,72,153,0.75);
+}
+.file-input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.file-preview{
+  display:none;flex-direction:column;align-items:center;gap:8px;
+  font-size:0.8rem;color:rgba(255,200,225,0.7);text-align:center;
+}
+.file-preview.show{display:flex}
+.file-icon-big{font-size:28px}
+.file-name{font-weight:500;color:rgba(255,220,235,0.9);font-size:0.78rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.remove-file{
+  font-size:0.65rem;color:rgba(236,72,153,0.6);cursor:pointer;
+  background:rgba(236,72,153,0.1);border:1px solid rgba(236,72,153,0.2);
+  border-radius:100px;padding:3px 10px;
+  transition:all 0.2s ease;
+}
+.remove-file:hover{background:rgba(236,72,153,0.2);color:rgba(236,72,153,0.9)}
+
+/* ── CTA ── */
+.cta-wrap{position:relative;text-align:center}
+.bloom{position:absolute;inset:-22px;border-radius:100px;background:linear-gradient(135deg,rgba(236,72,153,0.28),rgba(168,85,247,0.2));filter:blur(28px);opacity:0;transition:opacity 0.4s ease;pointer-events:none}
+.cta-wrap:hover .bloom{opacity:1}
+.cta{
+  position:relative;display:inline-flex;align-items:center;gap:12px;
+  padding:20px 60px;border-radius:100px;border:none;cursor:pointer;
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:1rem;font-weight:600;
+  color:#fff;text-decoration:none;
+  background:linear-gradient(135deg,#ff2d8a 0%,#ec4899 40%,#a855f7 100%);
+  background-size:200% auto;
+  box-shadow:
+    0 0 0 1px rgba(236,72,153,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.22),
+    0 8px 32px rgba(236,72,153,0.35),
+    0 2px 8px rgba(168,85,247,0.2);
+  transition:transform 0.38s cubic-bezier(0.34,1.56,0.64,1),box-shadow 0.3s ease,background-position 0.6s ease;
+  animation:ctaBreath 3s ease-in-out infinite;
+}
+@keyframes ctaBreath{
+  0%,100%{box-shadow:0 0 0 1px rgba(236,72,153,0.5),inset 0 1px 0 rgba(255,255,255,0.22),0 8px 32px rgba(236,72,153,0.35),0 2px 8px rgba(168,85,247,0.2)}
+  50%{box-shadow:0 0 0 1px rgba(236,72,153,0.6),inset 0 1px 0 rgba(255,255,255,0.22),0 10px 40px rgba(236,72,153,0.5),0 4px 16px rgba(168,85,247,0.3)}
+}
+.cta:hover{
+  transform:translateY(-5px) scale(1.05);
+  background-position:right center;
+  animation:none;
+  box-shadow:
+    0 0 0 1px rgba(236,72,153,0.7),
+    inset 0 1px 0 rgba(255,255,255,0.25),
+    0 20px 60px rgba(236,72,153,0.5),
+    0 8px 24px rgba(168,85,247,0.3);
+}
+.cta:active{transform:translateY(-1px) scale(1.01);animation:none}
+.cta.disabled{opacity:0.35;pointer-events:none;cursor:not-allowed;animation:none}
+.arrow{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,0.13);font-size:0.9rem;transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1)}
+.cta:hover .arrow{transform:translateX(5px)}
+.cta-note{margin-top:14px;font-size:0.7rem;color:rgba(255,150,190,0.3);letter-spacing:0.04em}
+
+/* ══════════════════════════════════════
+   AI ORB OVERLAY
+══════════════════════════════════════ */
+.orb-overlay{
+  position:fixed;inset:0;z-index:200;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(8,0,15,0.92);
+  backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  opacity:0;pointer-events:none;
+  transition:opacity 0.6s ease;
+}
+.orb-overlay.active{opacity:1;pointer-events:all}
+
+/* The electric orb */
+.ai-orb-wrap{position:relative;width:260px;height:260px;margin-bottom:48px}
+
+.ai-orb{
+  position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle at 38% 35%,
+    rgba(255,100,180,0.9) 0%,
+    rgba(236,72,153,0.7) 20%,
+    rgba(168,85,247,0.6) 45%,
+    rgba(88,28,220,0.5) 70%,
+    rgba(30,0,60,0.4) 100%
+  );
+  box-shadow:
+    0 0 60px rgba(236,72,153,0.6),
+    0 0 120px rgba(168,85,247,0.35),
+    0 0 200px rgba(236,72,153,0.15),
+    inset 0 0 60px rgba(255,150,200,0.15);
+  animation:orbPulse 3s ease-in-out infinite, orbRotate 12s linear infinite;
+}
+
+/* Electric surface lines */
+.ai-orb::before{
+  content:'';position:absolute;inset:-2px;border-radius:50%;
+  background:
+    radial-gradient(ellipse 30% 60% at 30% 40%, rgba(255,180,220,0.4) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 30% at 70% 30%, rgba(200,150,255,0.3) 0%, transparent 50%),
+    radial-gradient(ellipse 20% 80% at 60% 70%, rgba(255,120,180,0.25) 0%, transparent 50%);
+  animation:surfaceShimmer 4s ease-in-out infinite alternate;
+}
+
+.ai-orb::after{
+  content:'';position:absolute;inset:3px;border-radius:50%;
+  border:1px solid rgba(255,150,200,0.2);
+  box-shadow:inset 0 0 30px rgba(255,100,180,0.15);
+}
+
+/* Outer rings */
+.ring{
+  position:absolute;border-radius:50%;border:1px solid rgba(236,72,153,0.15);
+  top:50%;left:50%;transform:translate(-50%,-50%);
+}
+.ring1{width:300px;height:300px;animation:ringPulse 3s ease-in-out infinite}
+.ring2{width:350px;height:350px;animation:ringPulse 3s ease-in-out infinite 0.5s}
+.ring3{width:400px;height:400px;animation:ringPulse 3s ease-in-out infinite 1s;border-color:rgba(168,85,247,0.08)}
+
+/* Orbiting dot */
+.orbit-dot{
+  position:absolute;top:50%;left:50%;
+  width:320px;height:320px;
+  margin:-160px 0 0 -160px;
+  animation:orbitSpin 6s linear infinite;
+}
+.orbit-dot::before{
+  content:'';position:absolute;top:0;left:50%;
+  width:6px;height:6px;border-radius:50%;
+  background:linear-gradient(135deg,#ec4899,#a855f7);
+  box-shadow:0 0 10px rgba(236,72,153,0.8);
+  transform:translate(-50%,-50%);
+}
+.orbit-dot2{
+  position:absolute;top:50%;left:50%;
+  width:280px;height:280px;
+  margin:-140px 0 0 -140px;
+  animation:orbitSpin 9s linear infinite reverse;
+}
+.orbit-dot2::before{
+  content:'';position:absolute;top:50%;left:0;
+  width:4px;height:4px;border-radius:50%;
+  background:rgba(168,85,247,0.9);
+  box-shadow:0 0 8px rgba(168,85,247,0.8);
+  transform:translate(-50%,-50%);
+}
+
+@keyframes orbPulse{
+  0%,100%{box-shadow:0 0 60px rgba(236,72,153,0.6),0 0 120px rgba(168,85,247,0.35),0 0 200px rgba(236,72,153,0.15),inset 0 0 60px rgba(255,150,200,0.15)}
+  50%{box-shadow:0 0 80px rgba(236,72,153,0.75),0 0 160px rgba(168,85,247,0.45),0 0 250px rgba(236,72,153,0.2),inset 0 0 80px rgba(255,150,200,0.2)}
+}
+@keyframes orbRotate{0%{filter:hue-rotate(0deg)}100%{filter:hue-rotate(30deg)}}
+@keyframes surfaceShimmer{0%{opacity:0.7}100%{opacity:1}}
+@keyframes ringPulse{0%,100%{opacity:0.5;transform:translate(-50%,-50%) scale(1)}50%{opacity:0.15;transform:translate(-50%,-50%) scale(1.04)}}
+@keyframes orbitSpin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+
+/* Orb text */
+.orb-text{text-align:center}
+.orb-title{
+  font-family:'Playfair Display',serif;font-weight:700;font-style:italic;
+  font-size:1.5rem;letter-spacing:-0.02em;
+  background:linear-gradient(135deg,#fff,rgba(255,200,230,0.8));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  margin-bottom:10px;
+}
+.orb-dots{display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:14px}
+.orb-dot{width:5px;height:5px;border-radius:50%;background:rgba(236,72,153,0.6);animation:dotBounce 1.4s ease-in-out infinite}
+.orb-dot:nth-child(2){animation-delay:0.2s}
+.orb-dot:nth-child(3){animation-delay:0.4s}
+@keyframes dotBounce{0%,100%{transform:translateY(0);opacity:0.4}50%{transform:translateY(-6px);opacity:1}}
+.orb-sub{font-size:0.75rem;font-weight:300;color:rgba(255,170,205,0.45);letter-spacing:0.05em}
+
+/* ── Scan line on orb ── */
+.orb-scan{position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,150,200,0.5),transparent);animation:orbScan 2.5s ease-in-out infinite;border-radius:50%}
+@keyframes orbScan{0%{top:10%;opacity:0}20%{opacity:1}80%{opacity:1}100%{top:90%;opacity:0}}
+</style>
+</head>
+<body>
+
+<div class="noise"></div>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="grid"></div>
+<div class="b tl"></div><div class="b tr"></div><div class="b bl"></div><div class="b br"></div>
+
+<a class="logo" href="index.html">
+  <div class="logo-mark">⚡</div>
+  <span class="logo-name">SkillScan AI</span>
+</a>
+
+<!-- ══ AI ORB OVERLAY ══ -->
+<div class="orb-overlay" id="orbOverlay">
+  <div class="ai-orb-wrap">
+    <div class="ring ring1"></div>
+    <div class="ring ring2"></div>
+    <div class="ring ring3"></div>
+    <div class="orbit-dot"></div>
+    <div class="orbit-dot2"></div>
+    <div class="ai-orb">
+      <div class="orb-scan"></div>
+    </div>
+  </div>
+  <div class="orb-text">
+    <div class="orb-title">AI is reading your profile</div>
+    <div class="orb-dots">
+      <div class="orb-dot"></div>
+      <div class="orb-dot"></div>
+      <div class="orb-dot"></div>
+    </div>
+    <div class="orb-sub">Mapping skills · Analysing depth · Preparing questions</div>
+  </div>
+</div>
+
+<!-- ══ MAIN PAGE ══ -->
+<div class="page-wrap">
+<main class="main">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="step-label">
+      <span class="step-line"></span>
+      Step One
+      <span class="step-line r"></span>
+    </div>
+    <h1 class="title">Tell us who you are,<br/>and where you want to go.</h1>
+    <p class="subtitle">Paste your job target. Drop your resume. We'll handle the rest.</p>
+  </div>
+
+  <!-- Cards -->
+  <div class="cards">
+
+    <!-- JD Card -->
+    <div class="card">
+      <div class="card-label">
+        <div class="card-num">01</div>
+        Job Description
+      </div>
+      <div class="card-title">Your Target Role</div>
+      <div class="card-desc">Paste the job description you're aiming for — skills, requirements, everything.</div>
+      <textarea class="jd-area" id="jdInput" placeholder="Paste the full job description here..."></textarea>
+    </div>
+
+    <!-- Resume Card -->
+    <div class="card">
+      <div class="card-label">
+        <div class="card-num">02</div>
+        Your Resume
+      </div>
+      <div class="card-title">Drop Your Resume</div>
+      <div class="card-desc">Upload your CV in PDF or Word format — no copy-pasting needed.</div>
+
+      <div class="dropzone" id="dropzone">
+        <input type="file" class="file-input" id="fileInput" accept=".pdf,.doc,.docx"/>
+
+        <!-- Default state -->
+        <div id="dropDefault">
+          <div class="drop-icon">📄</div>
+          <div class="drop-text">Drop your resume here<br/>or click to browse</div>
+          <div class="drop-formats">
+            <span class="fmt-badge">PDF</span>
+            <span class="fmt-badge">DOCX</span>
+            <span class="fmt-badge">DOC</span>
+          </div>
+        </div>
+
+        <!-- File selected state -->
+        <div class="file-preview" id="filePreview">
+          <div class="file-icon-big" id="fileTypeIcon">📄</div>
+          <div class="file-name" id="fileName"></div>
+          <div class="remove-file" id="removeFile">✕ Remove</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-wrap">
+    <div class="bloom"></div>
+    <button class="cta disabled" id="beginBtn">
+      Begin Assessment
+      <span class="arrow">→</span>
+    </button>
+    <div class="cta-note" id="ctaNote">Fill both fields to continue</div>
+  </div>
+
+</main>
+</div>
+
+<script>
+const jdInput   = document.getElementById('jdInput');
+const fileInput  = document.getElementById('fileInput');
+const dropzone   = document.getElementById('dropzone');
+const dropDefault= document.getElementById('dropDefault');
+const filePreview= document.getElementById('filePreview');
+const fileName   = document.getElementById('fileName');
+const fileTypeIcon=document.getElementById('fileTypeIcon');
+const removeFile = document.getElementById('removeFile');
+const beginBtn   = document.getElementById('beginBtn');
+const ctaNote    = document.getElementById('ctaNote');
+const orbOverlay = document.getElementById('orbOverlay');
+
+let resumeFile = null;
+let resumeText = '';
+
+// ── Validate & enable button ─────────────────────────────────────
+function validate(){
+  const hasJD = jdInput.value.trim().length > 30;
+  const hasResume = resumeFile !== null;
+  if(hasJD && hasResume){
+    beginBtn.classList.remove('disabled');
+    ctaNote.style.opacity='0';
+  } else {
+    beginBtn.classList.add('disabled');
+    ctaNote.style.opacity='1';
+    if(!hasJD && !hasResume) ctaNote.textContent='Fill both fields to continue';
+    else if(!hasJD) ctaNote.textContent='Add the job description to continue';
+    else ctaNote.textContent='Drop your resume to continue';
+  }
+}
+
+jdInput.addEventListener('input', validate);
+
+// ── File handling ─────────────────────────────────────────────────
+function handleFile(file){
+  if(!file) return;
+  const ok = ['application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+  const extOk = /\.(pdf|doc|docx)$/i.test(file.name);
+  if(!ok.includes(file.type) && !extOk){
+    alert('Please upload a PDF or Word document (.pdf, .doc, .docx)');
+    return;
+  }
+  resumeFile = file;
+  fileName.textContent = file.name;
+  fileTypeIcon.textContent = file.name.endsWith('.pdf') ? '📕' : '📘';
+  dropDefault.style.display = 'none';
+  filePreview.classList.add('show');
+  dropzone.classList.add('has-file');
+  // Read file as text for PDF or as base64
+  const reader = new FileReader();
+  reader.onload = e => { resumeText = e.target.result; };
+  reader.readAsDataURL(file);
+  validate();
+}
+
+fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
+
+// Drag & drop
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzone.classList.remove('drag-over');
+  handleFile(e.dataTransfer.files[0]);
+});
+
+// Remove file
+removeFile.addEventListener('click', e => {
+  e.stopPropagation();
+  resumeFile = null; resumeText = '';
+  fileInput.value = '';
+  dropDefault.style.display = '';
+  filePreview.classList.remove('show');
+  dropzone.classList.remove('has-file');
+  validate();
+});
+
+// ── Begin Assessment ─────────────────────────────────────────────
+beginBtn.addEventListener('click', async () => {
+  if(beginBtn.classList.contains('disabled')) return;
+
+  // Show orb overlay
+  orbOverlay.classList.add('active');
+
+  // Cycle through loading messages
+  const orbTitle = orbOverlay.querySelector('.orb-title');
+  const messages = [
+    'AI is reading your profile',
+    'Mapping your skill landscape',
+    'Identifying key requirements',
+    'Preparing your assessment',
+  ];
+  let mi = 0;
+  const msgInterval = setInterval(() => {
+    mi = (mi + 1) % messages.length;
+    orbTitle.style.opacity = '0';
+    setTimeout(() => {
+      orbTitle.textContent = messages[mi];
+      orbTitle.style.opacity = '1';
+    }, 300);
+  }, 1600);
+  orbTitle.style.transition = 'opacity 0.3s ease';
+
+  // Extract resume text
+  let resumeContent = '';
+  try {
+    resumeContent = await extractText(resumeFile);
+  } catch(e){
+    resumeContent = resumeFile.name + ' (content uploaded)';
+  }
+
+  // Call backend /analyze
+  try {
+    const res = await fetch('http://127.0.0.1:8000/analyze', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        job_description: jdInput.value.trim(),
+        resume: resumeContent
+      })
+    });
+    const data = await res.json();
+
+    // Store in sessionStorage for assessment page
+    sessionStorage.setItem('jd', jdInput.value.trim());
+    sessionStorage.setItem('resume', resumeContent);
+    sessionStorage.setItem('skills', JSON.stringify(data.skills_to_assess));
+    sessionStorage.setItem('allSkills', JSON.stringify(data));
+
+    // Wait minimum 5s total then go
+    setTimeout(() => {
+      clearInterval(msgInterval);
+      window.location.href = 'assess.html';
+    }, 5500);
+
+  } catch(err){
+    clearInterval(msgInterval);
+    orbOverlay.classList.remove('active');
+    alert('Could not connect to backend. Is it running on port 8000?');
+  }
+});
+
+// ── Extract text from file ───────────────────────────────────────
+async function extractText(file){
+  return new Promise((resolve, reject) => {
+    if(file.type === 'application/pdf' || file.name.endsWith('.pdf')){
+      // For PDF: read as base64 and send filename as hint
+      // We'll send the raw text extraction via FileReader
+      const reader = new FileReader();
+      reader.onload = e => {
+        // Simple: send base64 — backend will handle
+        // For now extract what we can as text
+        resolve(`[Resume file: ${file.name}] - PDF uploaded by candidate`);
+      };
+      reader.onerror = reject;
+      reader.readAsText(file);
+    } else {
+      // DOCX: read as text (basic)
+      const reader = new FileReader();
+      reader.onload = e => {
+        const text = e.target.result;
+        resolve(text && text.trim().length > 20 ? text : `[Resume file: ${file.name}] - Word document uploaded`);
+      };
+      reader.onerror = reject;
+      reader.readAsText(file);
+    }
+  });
+}
+
+validate();
+</script>
+</body>
+</html>

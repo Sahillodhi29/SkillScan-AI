@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SkillScan AI — Your Performance Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,800;0,900;1,700;1,800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+/* ══════════════════════════════════════════════════════
+   RESET & BASE
+══════════════════════════════════════════════════════ */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:#05000c;
+  color:#fff;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+  min-height:100vh;
+}
+
+/* ═══════════ ATMOSPHERIC LAYERS ═══════════ */
+.bg-fixed{position:fixed;inset:0;z-index:0;pointer-events:none}
+.bg-mesh{
+  position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 70% 55% at 10% 10%, rgba(236,72,153,0.14) 0%,transparent 55%),
+    radial-gradient(ellipse 55% 50% at 90% 90%, rgba(168,85,247,0.11) 0%,transparent 55%),
+    radial-gradient(ellipse 45% 40% at 50% 50%, rgba(236,72,153,0.04) 0%,transparent 60%);
+}
+.bg-grid{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(236,72,153,0.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(236,72,153,0.04) 1px,transparent 1px);
+  background-size:72px 72px;
+  mask-image:radial-gradient(ellipse 100% 100% at 50% 50%,black 15%,transparent 80%);
+}
+.noise{
+  position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.022;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='250' height='250'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.88' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='250' height='250' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.scan-line{position:fixed;left:0;right:0;height:1px;z-index:1;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(236,72,153,0.25),rgba(168,85,247,0.18),transparent);animation:scanMove 14s linear infinite;opacity:0.2}
+@keyframes scanMove{0%{top:-2px}100%{top:100vh}}
+
+.bracket{position:fixed;width:38px;height:38px;z-index:15;pointer-events:none}
+.bracket::before,.bracket::after{content:'';position:absolute;background:rgba(236,72,153,0.18)}
+.tl{top:18px;left:18px}.tl::before{top:0;left:0;width:100%;height:1px}.tl::after{top:0;left:0;width:1px;height:100%}
+.tr{top:18px;right:18px}.tr::before{top:0;right:0;width:100%;height:1px}.tr::after{top:0;right:0;width:1px;height:100%}
+.bl{bottom:18px;left:18px}.bl::before{bottom:0;left:0;width:100%;height:1px}.bl::after{bottom:0;left:0;width:1px;height:100%}
+.br{bottom:18px;right:18px}.br::before{bottom:0;right:0;width:100%;height:1px}.br::after{bottom:0;right:0;width:1px;height:100%}
+
+/* ═══════════ TOPBAR ═══════════ */
+.topbar{
+  position:sticky;top:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 36px;
+  background:rgba(5,0,12,0.82);
+  backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
+  border-bottom:1px solid rgba(236,72,153,0.1);
+}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo-mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#ec4899,#a855f7);display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 0 18px rgba(236,72,153,0.4)}
+.logo-name{font-size:0.85rem;font-weight:600;background:linear-gradient(135deg,rgba(255,200,230,0.95),rgba(220,180,255,0.75));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.topbar-actions{display:flex;align-items:center;gap:10px}
+
+.btn-outline{
+  padding:9px 22px;border-radius:100px;cursor:pointer;
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:0.75rem;font-weight:600;
+  color:rgba(255,160,200,0.7);
+  background:rgba(255,255,255,0.035);border:1px solid rgba(236,72,153,0.2);
+  transition:all 0.3s ease;letter-spacing:0.02em;
+  text-decoration:none;display:inline-flex;align-items:center;gap:7px;
+}
+.btn-outline:hover{background:rgba(236,72,153,0.08);border-color:rgba(236,72,153,0.4);color:rgba(255,190,220,0.95)}
+
+.btn-primary{
+  padding:9px 22px;border-radius:100px;cursor:pointer;border:none;
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:0.75rem;font-weight:700;
+  color:#fff;letter-spacing:0.02em;
+  background:linear-gradient(135deg,#ec4899,#a855f7);
+  box-shadow:0 4px 20px rgba(236,72,153,0.35);
+  transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  display:inline-flex;align-items:center;gap:7px;
+}
+.btn-primary:hover{transform:translateY(-2px) scale(1.03);box-shadow:0 8px 28px rgba(236,72,153,0.5)}
+
+/* ═══════════ PAGE WRAP ═══════════ */
+.report-wrap{
+  position:relative;z-index:10;
+  max-width:1100px;margin:0 auto;
+  padding:56px 36px 100px;
+  opacity:0;transform:translateY(24px);
+  animation:pageIn 0.9s cubic-bezier(0.22,1,0.36,1) 0.15s forwards;
+}
+@keyframes pageIn{to{opacity:1;transform:translateY(0)}}
+
+/* ═══════════ HERO SECTION ═══════════ */
+.hero-section{
+  position:relative;
+  border-radius:28px;
+  padding:52px 56px;
+  margin-bottom:36px;
+  overflow:hidden;
+  background:rgba(255,255,255,0.022);
+  border:1px solid rgba(236,72,153,0.18);
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:40px;
+  align-items:center;
+}
+.hero-section::before{
+  content:'';position:absolute;inset:0;z-index:0;border-radius:28px;
+  background:
+    radial-gradient(ellipse 60% 80% at 0% 50%, rgba(236,72,153,0.1) 0%,transparent 55%),
+    radial-gradient(ellipse 40% 60% at 100% 30%, rgba(168,85,247,0.08) 0%,transparent 55%);
+}
+.hero-section::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;border-radius:28px 28px 0 0;
+  background:linear-gradient(90deg,transparent,rgba(236,72,153,0.5),rgba(168,85,247,0.4),transparent);
+}
+.hero-left{position:relative;z-index:1}
+.report-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:0.62rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;
+  color:rgba(236,72,153,0.7);margin-bottom:16px;
+}
+.eyebrow-dot{width:5px;height:5px;border-radius:50%;background:#ec4899;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:0.5;transform:scale(1)}50%{opacity:1;transform:scale(1.4)}}
+.report-headline{
+  font-family:'Playfair Display',serif;
+  font-weight:900;font-style:italic;
+  font-size:clamp(2rem,3.5vw,3.2rem);
+  line-height:1.05;letter-spacing:-0.025em;
+  background:linear-gradient(155deg,#fff 0%,rgba(255,215,235,0.8) 60%,rgba(200,150,255,0.7) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  margin-bottom:14px;
+}
+.report-summary{
+  font-size:0.88rem;font-weight:300;line-height:1.8;
+  color:rgba(255,185,215,0.5);
+  max-width:520px;
+}
+.report-meta{display:flex;gap:20px;margin-top:24px;flex-wrap:wrap}
+.meta-chip{
+  display:flex;align-items:center;gap:7px;
+  padding:7px 14px;border-radius:100px;
+  background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
+  font-size:0.65rem;font-weight:500;color:rgba(255,180,215,0.45);
+}
+.meta-chip-icon{font-size:0.85rem}
+
+/* ── SCORE RING ── */
+.score-ring-wrap{
+  position:relative;z-index:1;
+  display:flex;flex-direction:column;align-items:center;gap:12px;
+  flex-shrink:0;
+}
+.orb-score-ring{position:relative;width:160px;height:160px}
+.orb-score-ring canvas{position:absolute;inset:0}
+/* Static SVG ring shown only in print */
+.orb-score-ring .print-ring{display:none}
+.score-center{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+}
+.score-center-num{
+  font-family:'Playfair Display',serif;font-weight:900;
+  font-size:2.8rem;line-height:1;letter-spacing:-0.04em;
+  background:linear-gradient(135deg,#ec4899,#f472b6,#a855f7);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  animation:scoreCount 1.8s cubic-bezier(0.34,1,0.64,1) both;
+}
+@keyframes scoreCount{from{opacity:0;transform:scale(0.5)}to{opacity:1;transform:scale(1)}}
+.score-center-label{font-size:0.58rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,140,185,0.38);margin-top:2px}
+.score-ring-label{font-size:0.72rem;font-weight:500;color:rgba(255,180,210,0.5);text-align:center;letter-spacing:0.03em}
+.score-tier{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 14px;border-radius:100px;font-size:0.65rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;
+}
+.tier-elite{background:rgba(251,191,36,0.12);color:rgba(251,191,36,0.9);border:1px solid rgba(251,191,36,0.25)}
+.tier-strong{background:rgba(52,211,153,0.1);color:rgba(52,211,153,0.9);border:1px solid rgba(52,211,153,0.22)}
+.tier-developing{background:rgba(236,72,153,0.1);color:rgba(236,72,153,0.9);border:1px solid rgba(236,72,153,0.22)}
+.tier-gap{background:rgba(248,113,113,0.1);color:rgba(248,113,113,0.85);border:1px solid rgba(248,113,113,0.22)}
+
+/* ═══════════ SECTION CARDS ═══════════ */
+.section-card{
+  position:relative;overflow:hidden;
+  background:rgba(255,255,255,0.018);
+  border:1px solid rgba(236,72,153,0.13);
+  border-radius:22px;
+  padding:36px;
+  transition:border-color 0.3s ease,box-shadow 0.3s ease;
+}
+.section-card::before{
+  content:'';position:absolute;inset:0;z-index:0;border-radius:22px;
+  background:linear-gradient(135deg,rgba(236,72,153,0.04),transparent 60%);
+  pointer-events:none;
+}
+.section-card::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;border-radius:22px 22px 0 0;
+  background:linear-gradient(90deg,transparent,rgba(236,72,153,0.3),transparent);
+}
+.section-card:hover{border-color:rgba(236,72,153,0.22);box-shadow:0 12px 48px rgba(236,72,153,0.07)}
+.card-inner{position:relative;z-index:1}
+
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px}
+.section-title{display:flex;align-items:center;gap:12px}
+.section-icon{
+  width:38px;height:38px;border-radius:12px;flex-shrink:0;
+  background:rgba(236,72,153,0.12);border:1px solid rgba(236,72,153,0.2);
+  display:flex;align-items:center;justify-content:center;font-size:17px;
+}
+.section-name{
+  font-family:'Playfair Display',serif;font-weight:800;font-size:1.12rem;
+  background:linear-gradient(135deg,rgba(255,235,248,0.95),rgba(220,180,255,0.7));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.section-tag{
+  padding:4px 12px;border-radius:100px;font-size:0.6rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;
+  background:rgba(236,72,153,0.08);border:1px solid rgba(236,72,153,0.15);color:rgba(255,140,185,0.65);
+}
+
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:28px}
+.dash-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-bottom:28px}
+
+/* ═══════════ SKILL BARS ═══════════ */
+.skill-bar-item{
+  padding:18px 0;
+  border-bottom:1px solid rgba(255,255,255,0.042);
+  animation:slideIn 0.6s cubic-bezier(0.22,1,0.36,1) both;
+}
+.skill-bar-item:last-child{border-bottom:none;padding-bottom:0}
+@keyframes slideIn{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
+.skill-bar-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.skill-bar-name{font-size:0.85rem;font-weight:500;color:rgba(255,220,240,0.85)}
+.skill-bar-right{display:flex;align-items:center;gap:10px}
+.skill-bar-score{font-size:0.82rem;font-weight:700;color:rgba(255,200,230,0.9);min-width:36px;text-align:right}
+.skill-badge{font-size:0.52rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;padding:3px 9px;border-radius:100px}
+.sb-proficient{background:rgba(52,211,153,0.11);color:rgba(52,211,153,0.9);border:1px solid rgba(52,211,153,0.2)}
+.sb-developing{background:rgba(251,191,36,0.09);color:rgba(251,191,36,0.85);border:1px solid rgba(251,191,36,0.18)}
+.sb-gap{background:rgba(248,113,113,0.09);color:rgba(248,113,113,0.85);border:1px solid rgba(248,113,113,0.18)}
+
+.bar-track{height:6px;background:rgba(255,255,255,0.055);border-radius:100px;overflow:hidden;position:relative}
+.bar-fill{height:100%;border-radius:100px;width:0;transition:width 1.6s cubic-bezier(0.34,1.2,0.64,1)}
+.bar-fill.proficient{background:linear-gradient(90deg,#34d399,#10b981);box-shadow:0 0 10px rgba(52,211,153,0.35)}
+.bar-fill.developing{background:linear-gradient(90deg,#fbbf24,#f59e0b);box-shadow:0 0 10px rgba(251,191,36,0.25)}
+.bar-fill.gap{background:linear-gradient(90deg,#f87171,#ef4444);box-shadow:0 0 10px rgba(248,113,113,0.25)}
+
+.count-up{display:inline-block}
+
+/* ═══════════ STAT TILES ═══════════ */
+.stat-tile{
+  padding:24px;border-radius:18px;
+  background:rgba(255,255,255,0.022);
+  border:1px solid rgba(255,255,255,0.06);
+  text-align:center;position:relative;overflow:hidden;
+  transition:border-color 0.3s ease,transform 0.3s ease;
+}
+.stat-tile:hover{border-color:rgba(236,72,153,0.25);transform:translateY(-3px)}
+.stat-tile::before{content:'';position:absolute;inset:0;border-radius:18px;background:linear-gradient(135deg,rgba(236,72,153,0.05),transparent 60%);pointer-events:none}
+.stat-num{
+  font-family:'Playfair Display',serif;font-weight:900;
+  font-size:2.4rem;line-height:1;margin-bottom:5px;
+  background:linear-gradient(135deg,#ec4899,#a855f7);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.stat-label{font-size:0.67rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,150,195,0.4)}
+.stat-sub{font-size:0.72rem;font-weight:300;color:rgba(255,180,215,0.35);margin-top:6px;line-height:1.5}
+
+/* ═══════════ CATEGORY PILLS ═══════════ */
+.category-group{margin-bottom:20px}
+.cat-label{font-size:0.6rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,140,185,0.35);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.cat-label::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.05)}
+.pill-row{display:flex;flex-wrap:wrap;gap:8px}
+.skill-pill{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:100px;font-size:0.73rem;font-weight:500}
+.sp-proficient{background:rgba(52,211,153,0.09);border:1px solid rgba(52,211,153,0.22);color:rgba(52,211,153,0.88)}
+.sp-developing{background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);color:rgba(251,191,36,0.82)}
+.sp-gap{background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);color:rgba(248,113,113,0.82)}
+.sp-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.spd-proficient{background:#34d399}.spd-developing{background:#fbbf24}.spd-gap{background:#f87171}
+
+/* ═══════════ RADAR CHART ═══════════ */
+.chart-container{position:relative;display:flex;justify-content:center;align-items:center;padding:16px 0}
+#radarCanvas{max-width:100%;height:auto}
+
+/* ═══════════ LEARNING PLAN ═══════════ */
+.lp-item{
+  display:grid;grid-template-columns:auto 1fr;gap:0;
+  border:1px solid rgba(255,255,255,0.055);border-radius:18px;
+  overflow:hidden;margin-bottom:18px;
+  transition:border-color 0.3s ease,box-shadow 0.3s ease;
+  animation:slideIn 0.55s cubic-bezier(0.22,1,0.36,1) both;
+}
+.lp-item:hover{border-color:rgba(236,72,153,0.28);box-shadow:0 8px 40px rgba(236,72,153,0.08)}
+.lp-item:last-child{margin-bottom:0}
+.lp-accent{width:4px;flex-shrink:0;background:linear-gradient(180deg,#ec4899,#a855f7)}
+.lp-accent.developing{background:linear-gradient(180deg,#fbbf24,#f59e0b)}
+.lp-accent.gap{background:linear-gradient(180deg,#f87171,#ef4444)}
+.lp-body{padding:24px 28px;background:rgba(255,255,255,0.018)}
+.lp-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:12px}
+.lp-skill-name{
+  font-family:'Playfair Display',serif;font-weight:700;font-size:1.08rem;
+  background:linear-gradient(135deg,rgba(255,235,248,0.95),rgba(220,180,255,0.75));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.lp-week-badge{display:inline-flex;align-items:center;gap:5px;flex-shrink:0;padding:5px 13px;border-radius:100px;font-size:0.62rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.2);color:rgba(200,140,255,0.8)}
+.lp-gap-reason{font-size:0.78rem;font-weight:300;color:rgba(255,160,200,0.45);line-height:1.65;margin-bottom:14px;padding-left:12px;border-left:2px solid rgba(236,72,153,0.2)}
+.lp-tip{font-size:0.82rem;font-weight:500;color:rgba(255,215,235,0.78);line-height:1.65;margin-bottom:18px;background:rgba(236,72,153,0.05);border-radius:10px;padding:12px 16px;border:1px solid rgba(236,72,153,0.1)}
+.lp-tip::before{content:'💡 '}
+.adjacent-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.adj-pill{padding:4px 11px;border-radius:100px;font-size:0.65rem;font-weight:500;background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.15);color:rgba(200,150,255,0.7)}
+.resources-label{font-size:0.6rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,140,185,0.32);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.resources-label::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.05)}
+.resource-list{display:flex;flex-direction:column;gap:8px}
+.resource-link{display:flex;align-items:center;gap:12px;padding:11px 16px;border-radius:12px;text-decoration:none;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);transition:all 0.3s ease}
+.resource-link:hover{background:rgba(236,72,153,0.07);border-color:rgba(236,72,153,0.22);transform:translateX(4px)}
+.res-type-badge{padding:3px 9px;border-radius:100px;font-size:0.55rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;flex-shrink:0}
+.rt-Course{background:rgba(99,102,241,0.12);color:rgba(165,180,252,0.85);border:1px solid rgba(99,102,241,0.18)}
+.rt-Practice{background:rgba(52,211,153,0.1);color:rgba(52,211,153,0.85);border:1px solid rgba(52,211,153,0.18)}
+.rt-Video{background:rgba(248,113,113,0.1);color:rgba(252,165,165,0.85);border:1px solid rgba(248,113,113,0.18)}
+.rt-Book{background:rgba(251,191,36,0.09);color:rgba(253,224,71,0.8);border:1px solid rgba(251,191,36,0.18)}
+.rt-Documentation{background:rgba(168,85,247,0.1);color:rgba(216,180,254,0.85);border:1px solid rgba(168,85,247,0.18)}
+.res-title{font-size:0.78rem;font-weight:500;color:rgba(255,215,235,0.75);flex:1}
+.resource-link:hover .res-title{color:rgba(255,235,248,0.95)}
+.res-arrow{font-size:0.7rem;color:rgba(255,130,185,0.3);transition:all 0.3s ease;flex-shrink:0}
+.resource-link:hover .res-arrow{color:rgba(236,72,153,0.8)}
+
+/* ═══════════ CTA STRIP ═══════════ */
+.cta-strip{
+  position:relative;overflow:hidden;border-radius:22px;padding:44px 48px;margin-top:36px;
+  background:linear-gradient(135deg,rgba(236,72,153,0.1),rgba(168,85,247,0.08));
+  border:1px solid rgba(236,72,153,0.2);
+  display:flex;align-items:center;justify-content:space-between;gap:32px;
+}
+.cta-strip::before{content:'';position:absolute;inset:0;border-radius:22px;background:radial-gradient(ellipse 50% 80% at 0% 50%,rgba(236,72,153,0.12) 0%,transparent 55%);pointer-events:none}
+.cta-strip::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(236,72,153,0.45),rgba(168,85,247,0.35),transparent)}
+.cta-strip-left{position:relative;z-index:1}
+.cta-strip-title{font-family:'Playfair Display',serif;font-weight:800;font-style:italic;font-size:1.4rem;letter-spacing:-0.02em;background:linear-gradient(135deg,#fff,rgba(255,210,235,0.85));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px}
+.cta-strip-sub{font-size:0.78rem;font-weight:300;color:rgba(255,170,205,0.38)}
+.cta-strip-right{display:flex;gap:12px;position:relative;z-index:1;flex-shrink:0}
+.btn-print{display:inline-flex;align-items:center;gap:9px;padding:14px 32px;border-radius:100px;cursor:pointer;border:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:0.85rem;font-weight:700;color:#fff;background:linear-gradient(135deg,#ec4899 0%,#d946a8 50%,#a855f7 100%);box-shadow:0 0 0 1px rgba(236,72,153,0.5),0 8px 32px rgba(236,72,153,0.4);transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1)}
+.btn-print:hover{transform:translateY(-3px) scale(1.04)}
+.btn-restart{display:inline-flex;align-items:center;gap:9px;padding:14px 28px;border-radius:100px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;font-size:0.85rem;font-weight:600;color:rgba(255,160,200,0.8);background:rgba(255,255,255,0.04);border:1px solid rgba(236,72,153,0.22);text-decoration:none;transition:all 0.3s ease}
+.btn-restart:hover{background:rgba(236,72,153,0.09);border-color:rgba(236,72,153,0.45)}
+
+.empty-lp{text-align:center;padding:36px;color:rgba(255,180,210,0.35);font-size:0.85rem}
+.empty-lp .big{font-size:2rem;margin-bottom:12px}
+
+.fade-in{opacity:0;animation:fadeInUp 0.7s cubic-bezier(0.22,1,0.36,1) both}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.delay-1{animation-delay:0.1s}.delay-2{animation-delay:0.2s}.delay-3{animation-delay:0.3s}.delay-4{animation-delay:0.4s}
+
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,rgba(236,72,153,0.15),transparent);margin:32px 0}
+
+
+/* ══════════════════════════════════════════════════════
+   PRINT / PDF STYLES
+   Goal: preserve the dark aesthetic with all data visible
+══════════════════════════════════════════════════════ */
+@media print {
+  /* Force dark background to print */
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+
+  html, body {
+    background: #05000c !important;
+    color: #fff !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+
+  /* Page setup */
+  @page {
+    margin: 12mm 10mm;
+    size: A4;
+  }
+
+  /* Hide screen-only elements */
+  .no-print, .topbar, .bg-fixed, .noise, .scan-line,
+  .bracket, .cta-strip { display: none !important; }
+
+  /* Remove fixed positioning */
+  .bg-fixed, .noise, .scan-line, .bracket { display: none !important; }
+
+  /* Animations: skip to final state */
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /* Page wrap */
+  .report-wrap {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+
+  /* Fade-in elements: show immediately */
+  .fade-in {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+  }
+
+  /* ── HERO ── */
+  .hero-section {
+    background: #1a0025 !important;
+    border: 1px solid rgba(236,72,153,0.4) !important;
+    border-radius: 16px !important;
+    padding: 32px 40px !important;
+    margin-bottom: 20px !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .hero-section::before {
+    background:
+      radial-gradient(ellipse 60% 80% at 0% 50%, rgba(236,72,153,0.15) 0%,transparent 55%),
+      radial-gradient(ellipse 40% 60% at 100% 30%, rgba(168,85,247,0.1) 0%,transparent 55%) !important;
+  }
+
+  /* Fix gradient text for print — give solid fallback */
+  .report-headline {
+    -webkit-text-fill-color: #f9a8d4 !important;
+    color: #f9a8d4 !important;
+  }
+  .section-name {
+    -webkit-text-fill-color: #f0abfc !important;
+    color: #f0abfc !important;
+  }
+  .lp-skill-name {
+    -webkit-text-fill-color: #f9a8d4 !important;
+    color: #f9a8d4 !important;
+  }
+  .cta-strip-title {
+    -webkit-text-fill-color: #fff !important;
+    color: #fff !important;
+  }
+  .logo-name {
+    -webkit-text-fill-color: #f9a8d4 !important;
+    color: #f9a8d4 !important;
+  }
+
+  /* Score number: use solid color */
+  .score-center-num {
+    -webkit-text-fill-color: #ec4899 !important;
+    color: #ec4899 !important;
+    font-size: 2.2rem !important;
+  }
+
+  /* Stat numbers */
+  .stat-num {
+    -webkit-text-fill-color: #ec4899 !important;
+    color: #ec4899 !important;
+  }
+
+  /* Hide canvas score ring, show the static SVG ring */
+  #scoreCanvas { display: none !important; }
+  .orb-score-ring .print-ring { display: block !important; }
+  .orb-score-ring {
+    width: 140px !important;
+    height: 140px !important;
+  }
+  .score-center {
+    position: absolute !important;
+    inset: 0 !important;
+  }
+
+  /* ── STAT TILES ── */
+  .dash-grid-3 {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr 1fr !important;
+    gap: 12px !important;
+    margin-bottom: 16px !important;
+  }
+  .stat-tile {
+    background: #120018 !important;
+    border: 1px solid rgba(236,72,153,0.3) !important;
+    border-radius: 14px !important;
+    padding: 18px !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* ── GRID ── */
+  .dash-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 16px !important;
+    margin-bottom: 20px !important;
+  }
+
+  /* ── SECTION CARDS ── */
+  .section-card {
+    background: #0e0018 !important;
+    border: 1px solid rgba(236,72,153,0.25) !important;
+    border-radius: 16px !important;
+    padding: 24px !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* ── SKILL BARS: force widths to be visible ── */
+  .bar-track {
+    background: rgba(255,255,255,0.1) !important;
+    border-radius: 100px !important;
+    height: 8px !important;
+  }
+  .bar-fill {
+    height: 8px !important;
+    border-radius: 100px !important;
+    /* width is set via inline style by JS */
+  }
+  .bar-fill.proficient {
+    background: linear-gradient(90deg, #34d399, #10b981) !important;
+  }
+  .bar-fill.developing {
+    background: linear-gradient(90deg, #fbbf24, #f59e0b) !important;
+  }
+  .bar-fill.gap {
+    background: linear-gradient(90deg, #f87171, #ef4444) !important;
+  }
+  .skill-bar-name {
+    color: rgba(255,220,240,0.9) !important;
+  }
+  .skill-bar-score {
+    color: #fff !important;
+  }
+
+  /* ── RADAR CANVAS ── */
+  #radarCanvas {
+    display: block !important;
+    max-width: 220px !important;
+    height: 220px !important;
+  }
+
+  /* ── CATEGORY PILLS ── */
+  .skill-pill {
+    border-radius: 100px !important;
+    padding: 5px 12px !important;
+  }
+  .sp-proficient { background: rgba(52,211,153,0.15) !important; border: 1px solid rgba(52,211,153,0.4) !important; color: #34d399 !important; }
+  .sp-developing { background: rgba(251,191,36,0.12) !important; border: 1px solid rgba(251,191,36,0.35) !important; color: #fbbf24 !important; }
+  .sp-gap { background: rgba(248,113,113,0.12) !important; border: 1px solid rgba(248,113,113,0.35) !important; color: #f87171 !important; }
+
+  /* ── SKILL BADGES ── */
+  .sb-proficient { background: rgba(52,211,153,0.2) !important; color: #34d399 !important; border: 1px solid rgba(52,211,153,0.4) !important; }
+  .sb-developing { background: rgba(251,191,36,0.15) !important; color: #fbbf24 !important; border: 1px solid rgba(251,191,36,0.35) !important; }
+  .sb-gap { background: rgba(248,113,113,0.15) !important; color: #f87171 !important; border: 1px solid rgba(248,113,113,0.35) !important; }
+
+  /* ── LEARNING PLAN ── */
+  .lp-item {
+    background: #0e0018 !important;
+    border: 1px solid rgba(236,72,153,0.2) !important;
+    border-radius: 14px !important;
+    margin-bottom: 14px !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .lp-body {
+    background: rgba(255,255,255,0.02) !important;
+  }
+  .lp-tip {
+    background: rgba(236,72,153,0.08) !important;
+    border: 1px solid rgba(236,72,153,0.18) !important;
+    color: rgba(255,215,235,0.9) !important;
+  }
+  .lp-gap-reason {
+    color: rgba(255,180,215,0.65) !important;
+    border-left: 2px solid rgba(236,72,153,0.4) !important;
+  }
+  .lp-week-badge {
+    background: rgba(168,85,247,0.18) !important;
+    border: 1px solid rgba(168,85,247,0.35) !important;
+    color: #c084fc !important;
+  }
+  .adj-pill {
+    background: rgba(168,85,247,0.12) !important;
+    border: 1px solid rgba(168,85,247,0.25) !important;
+    color: #c084fc !important;
+  }
+  .resource-link {
+    background: rgba(255,255,255,0.05) !important;
+    border: 1px solid rgba(255,255,255,0.12) !important;
+  }
+  .res-title {
+    color: rgba(255,220,240,0.9) !important;
+  }
+  .res-arrow {
+    color: rgba(236,72,153,0.6) !important;
+  }
+
+  /* Score tier badge */
+  .tier-elite { background: rgba(251,191,36,0.2) !important; color: #fbbf24 !important; border: 1px solid rgba(251,191,36,0.4) !important; }
+  .tier-strong { background: rgba(52,211,153,0.15) !important; color: #34d399 !important; border: 1px solid rgba(52,211,153,0.35) !important; }
+  .tier-developing { background: rgba(236,72,153,0.15) !important; color: #ec4899 !important; border: 1px solid rgba(236,72,153,0.35) !important; }
+  .tier-gap { background: rgba(248,113,113,0.15) !important; color: #f87171 !important; border: 1px solid rgba(248,113,113,0.35) !important; }
+
+  /* Meta chips */
+  .meta-chip {
+    background: rgba(255,255,255,0.07) !important;
+    border: 1px solid rgba(255,255,255,0.15) !important;
+    color: rgba(255,200,230,0.75) !important;
+  }
+
+  /* Report summary text */
+  .report-summary {
+    color: rgba(255,200,230,0.7) !important;
+  }
+  .report-eyebrow {
+    color: #ec4899 !important;
+  }
+
+  /* Section tags */
+  .section-tag {
+    background: rgba(236,72,153,0.15) !important;
+    border: 1px solid rgba(236,72,153,0.3) !important;
+    color: rgba(255,150,200,0.9) !important;
+  }
+
+  /* Section icon */
+  .section-icon {
+    background: rgba(236,72,153,0.18) !important;
+    border: 1px solid rgba(236,72,153,0.35) !important;
+  }
+
+  /* Stat labels */
+  .stat-label { color: rgba(255,150,195,0.7) !important; }
+  .stat-sub { color: rgba(255,180,215,0.5) !important; }
+  .score-ring-label { color: rgba(255,180,210,0.7) !important; }
+  .score-center-label { color: rgba(255,140,185,0.6) !important; }
+
+  /* Cat labels */
+  .cat-label { color: rgba(255,150,200,0.6) !important; }
+
+  /* Divider */
+  .section-divider { background: rgba(236,72,153,0.25) !important; }
+
+  /* Skill bar items */
+  .skill-bar-item {
+    border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+  }
+
+  /* Resources labels */
+  .resources-label { color: rgba(255,150,200,0.5) !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="bg-fixed"><div class="bg-mesh"></div><div class="bg-grid"></div></div>
+<div class="noise"></div>
+<div class="scan-line"></div>
+<div class="bracket tl no-print"></div>
+<div class="bracket tr no-print"></div>
+<div class="bracket bl no-print"></div>
+<div class="bracket br no-print"></div>
+
+<!-- TOPBAR -->
+<nav class="topbar no-print">
+  <a class="logo" href="index.html">
+    <div class="logo-mark">⚡</div>
+    <span class="logo-name">SkillScan AI</span>
+  </a>
+  <div class="topbar-actions">
+    <a class="btn-outline" href="upload.html">← New Assessment</a>
+    <button class="btn-primary" onclick="triggerPrint()">🖨 Print Report</button>
+  </div>
+</nav>
+
+<!-- REPORT BODY -->
+<div class="report-wrap" id="reportWrap">
+
+  <!-- ══ HERO ══ -->
+  <div class="hero-section fade-in">
+    <div class="hero-left">
+      <div class="report-eyebrow">
+        <div class="eyebrow-dot"></div>
+        Performance Report · SkillScan AI
+      </div>
+      <h1 class="report-headline">Your Skill<br/>Intelligence Report</h1>
+      <p class="report-summary" id="summaryText">Analysing your assessment results…</p>
+      <div class="report-meta" id="reportMeta">
+        <div class="meta-chip"><span class="meta-chip-icon">📋</span><span id="metaSkills">0 skills assessed</span></div>
+        <div class="meta-chip"><span class="meta-chip-icon">✅</span><span id="metaStrong">0 proficient</span></div>
+        <div class="meta-chip"><span class="meta-chip-icon">🎯</span><span id="metaGaps">0 gaps identified</span></div>
+      </div>
+    </div>
+    <div class="score-ring-wrap">
+      <div class="orb-score-ring">
+        <!-- Canvas ring: shown on screen -->
+        <canvas id="scoreCanvas" width="160" height="160"></canvas>
+        <!-- Static SVG ring: shown only in print -->
+        <svg class="print-ring" width="160" height="160" viewBox="0 0 160 160" id="printRingSvg" xmlns="http://www.w3.org/2000/svg">
+          <!-- Track -->
+          <circle cx="80" cy="80" r="68" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="10"/>
+          <!-- Fill arc — drawn dynamically by JS -->
+          <circle cx="80" cy="80" r="68" fill="none"
+            stroke="url(#scoreGrad)" stroke-width="10"
+            stroke-linecap="round"
+            stroke-dasharray="427.26"
+            stroke-dashoffset="427.26"
+            transform="rotate(-90 80 80)"
+            id="printArc"/>
+          <defs>
+            <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#ec4899"/>
+              <stop offset="50%" stop-color="#f472b6"/>
+              <stop offset="100%" stop-color="#a855f7"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="score-center">
+          <div class="score-center-num" id="scoreNum">0%</div>
+          <div class="score-center-label">Overall</div>
+        </div>
+      </div>
+      <div class="score-tier" id="scoreTier">—</div>
+      <div class="score-ring-label">Proficiency Score</div>
+    </div>
+  </div>
+
+  <!-- ══ STAT TILES ══ -->
+  <div class="dash-grid-3 fade-in delay-1">
+    <div class="stat-tile">
+      <div class="stat-num" id="statProficient">0</div>
+      <div class="stat-label">Proficient Skills</div>
+      <div class="stat-sub">Ready for the role</div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-num" id="statDeveloping">0</div>
+      <div class="stat-label">Developing Skills</div>
+      <div class="stat-sub">Close to job-ready</div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-num" id="statGaps">0</div>
+      <div class="stat-label">Skill Gaps</div>
+      <div class="stat-sub">Needs targeted work</div>
+    </div>
+  </div>
+
+  <!-- ══ SKILL BARS + RADAR ══ -->
+  <div class="dash-grid fade-in delay-2">
+    <div class="section-card">
+      <div class="card-inner">
+        <div class="section-head">
+          <div class="section-title">
+            <div class="section-icon">📊</div>
+            <div class="section-name">Skill Breakdown</div>
+          </div>
+          <div class="section-tag">All Skills</div>
+        </div>
+        <div id="skillBarsContainer"></div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="card-inner">
+        <div class="section-head">
+          <div class="section-title">
+            <div class="section-icon">🎯</div>
+            <div class="section-name">Proficiency Map</div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="radarCanvas" width="280" height="280"></canvas>
+        </div>
+        <div class="section-divider"></div>
+        <div id="categoryGroups"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ LEARNING PLAN ══ -->
+  <div class="section-card fade-in delay-3">
+    <div class="card-inner">
+      <div class="section-head">
+        <div class="section-title">
+          <div class="section-icon">🚀</div>
+          <div class="section-name">Personalised Learning Plan</div>
+        </div>
+        <div class="section-tag">AI-Curated</div>
+      </div>
+      <div id="learningPlanContainer"></div>
+    </div>
+  </div>
+
+  <!-- ══ CTA STRIP ══ -->
+  <div class="cta-strip fade-in delay-4 no-print">
+    <div class="cta-strip-left">
+      <div class="cta-strip-title">What comes next?</div>
+      <div class="cta-strip-sub">Save your report, follow the plan, and revisit in 4 weeks to track progress.</div>
+    </div>
+    <div class="cta-strip-right">
+      <button class="btn-print" onclick="triggerPrint()">🖨 Download PDF Report</button>
+      <a class="btn-restart" href="upload.html">↻ New Assessment</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// DATA LOAD
+// ══════════════════════════════════════════════════════
+let reportData = null;
+let skillResults = {};
+
+try {
+  reportData   = JSON.parse(sessionStorage.getItem('reportData') || 'null');
+  skillResults = JSON.parse(sessionStorage.getItem('skillResults') || '{}');
+} catch(e) {}
+
+if (!reportData) {
+  reportData = {
+    overall_score: 72,
+    skill_scores: { Python: 88, FastAPI: 74, SQL: 62, Docker: 48, SystemDesign: 38 },
+    proficient:  ['Python', 'FastAPI'],
+    developing:  ['SQL'],
+    gaps:        ['Docker', 'SystemDesign'],
+    summary: "Strong Python and FastAPI foundations with solid REST API experience. Growing areas include containerisation and system design thinking, which are key for senior-level roles. The learning plan below targets these gaps with practical, hands-on resources.",
+    learning_plan: [
+      {
+        skill: 'Docker',
+        gap_reason: 'Assessment showed limited hands-on containerisation experience.',
+        adjacent_skills: ['Kubernetes', 'Docker Compose'],
+        tip: 'Build and containerise a personal FastAPI project to immediately apply Docker skills.',
+        weeks: 3,
+        resources: [
+          { title: 'Docker — Official Getting Started Guide', url: 'https://docs.docker.com/get-started/', type: 'Documentation' },
+          { title: 'Docker & Kubernetes: The Practical Guide', url: 'https://www.udemy.com/course/docker-kubernetes-the-practical-guide/', type: 'Course' }
+        ]
+      },
+      {
+        skill: 'System Design',
+        gap_reason: 'Candidate showed foundational awareness but struggled with trade-off analysis.',
+        adjacent_skills: ['Distributed Systems', 'Database Scaling', 'Caching'],
+        tip: 'Practice designing 2-3 real systems weekly using the STAR format.',
+        weeks: 6,
+        resources: [
+          { title: 'System Design Primer — GitHub', url: 'https://github.com/donnemartin/system-design-primer', type: 'Documentation' },
+          { title: 'Grokking the System Design Interview', url: 'https://www.educative.io/courses/grokking-the-system-design-interview', type: 'Course' }
+        ]
+      }
+    ]
+  };
+}
+
+// ══════════════════════════════════════════════════════
+// PRINT TRIGGER — ensure bars + ring are rendered before print dialog
+// ══════════════════════════════════════════════════════
+function triggerPrint() {
+  // Force all bar fills to their final width (in case transitions haven't run)
+  document.querySelectorAll('.bar-fill').forEach(b => {
+    b.style.width = b.dataset.width + '%';
+  });
+  // Short delay so browser re-paints, then open print dialog
+  setTimeout(() => window.print(), 120);
+}
+
+// ══════════════════════════════════════════════════════
+// POPULATE PAGE
+// ══════════════════════════════════════════════════════
+function populatePage() {
+  const d = reportData;
+
+  document.getElementById('summaryText').innerHTML = d.summary || 'Assessment complete.';
+
+  const total = Object.keys(d.skill_scores || {}).length;
+  document.getElementById('metaSkills').textContent = `${total} skill${total !== 1 ? 's' : ''} assessed`;
+  document.getElementById('metaStrong').textContent = `${(d.proficient||[]).length} proficient`;
+  document.getElementById('metaGaps').textContent   = `${(d.gaps||[]).length} gap${(d.gaps||[]).length !== 1 ? 's' : ''} identified`;
+
+  document.getElementById('statProficient').textContent = d.proficient?.length || 0;
+  document.getElementById('statDeveloping').textContent = d.developing?.length || 0;
+  document.getElementById('statGaps').textContent       = d.gaps?.length       || 0;
+
+  const score = d.overall_score || 0;
+  animateCounter(document.getElementById('scoreNum'), 0, score, 1800, '%');
+  drawScoreRing(score);
+  setPrintRing(score);
+
+  const tierEl = document.getElementById('scoreTier');
+  if (score >= 85)      { tierEl.className = 'score-tier tier-elite';      tierEl.textContent = '⭐ Elite Performer'; }
+  else if (score >= 70) { tierEl.className = 'score-tier tier-strong';     tierEl.textContent = '✦ Strong Candidate'; }
+  else if (score >= 50) { tierEl.className = 'score-tier tier-developing'; tierEl.textContent = '◈ Developing'; }
+  else                  { tierEl.className = 'score-tier tier-gap';        tierEl.textContent = '○ Needs Work'; }
+
+  renderSkillBars(d);
+  setTimeout(() => drawRadar(d), 400);
+  renderCategories(d);
+  renderLearningPlan(d);
+}
+
+// ══════════════════════════════════════════════════════
+// SVG PRINT RING — set stroke-dashoffset based on score
+// ══════════════════════════════════════════════════════
+function setPrintRing(score) {
+  const arc = document.getElementById('printArc');
+  if (!arc) return;
+  const circumference = 2 * Math.PI * 68; // ≈ 427.26
+  const offset = circumference * (1 - score / 100);
+  arc.setAttribute('stroke-dashoffset', offset.toFixed(2));
+}
+
+// ══════════════════════════════════════════════════════
+// SCORE RING CANVAS (screen only)
+// ══════════════════════════════════════════════════════
+function drawScoreRing(score) {
+  const canvas = document.getElementById('scoreCanvas');
+  const ctx    = canvas.getContext('2d');
+  const cx = 80, cy = 80, r = 68, lw = 10;
+  const startAngle = -Math.PI / 2;
+  const pct = score / 100;
+  const target = pct * 2 * Math.PI;
+  const step   = target / 60;
+  const grad   = ctx.createLinearGradient(0, 0, 160, 160);
+  grad.addColorStop(0,   '#ec4899');
+  grad.addColorStop(0.5, '#f472b6');
+  grad.addColorStop(1,   '#a855f7');
+
+  let drawn = 0;
+  function frame() {
+    ctx.clearRect(0, 0, 160, 160);
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+    ctx.strokeStyle = 'rgba(255,255,255,0.055)';
+    ctx.lineWidth = lw;
+    ctx.shadowBlur = 0;
+    ctx.stroke();
+    ctx.shadowColor = 'rgba(236,72,153,0.55)';
+    ctx.shadowBlur  = 16;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, startAngle, startAngle + drawn);
+    ctx.strokeStyle = grad;
+    ctx.lineWidth   = lw;
+    ctx.lineCap     = 'round';
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    if (drawn < target) { drawn = Math.min(drawn + step, target); requestAnimationFrame(frame); }
+  }
+  frame();
+}
+
+// ══════════════════════════════════════════════════════
+// SKILL BARS
+// ══════════════════════════════════════════════════════
+function getCategory(skill, d) {
+  if ((d.proficient||[]).includes(skill)) return 'proficient';
+  if ((d.developing||[]).includes(skill)) return 'developing';
+  return 'gap';
+}
+function getCategoryLabel(cat) {
+  return { proficient: 'Proficient', developing: 'Developing', gap: 'Gap' }[cat] || cat;
+}
+
+function renderSkillBars(d) {
+  const container = document.getElementById('skillBarsContainer');
+  const scores    = d.skill_scores || {};
+  const skills    = Object.keys(scores);
+
+  container.innerHTML = skills.map((skill, i) => {
+    const score = scores[skill];
+    const cat   = getCategory(skill, d);
+    return `
+    <div class="skill-bar-item" style="animation-delay:${i * 0.08}s">
+      <div class="skill-bar-top">
+        <div class="skill-bar-name">${skill}</div>
+        <div class="skill-bar-right">
+          <div class="skill-bar-score"><span class="count-up" data-target="${score}">0</span>%</div>
+          <div class="skill-badge sb-${cat}">${getCategoryLabel(cat)}</div>
+        </div>
+      </div>
+      <div class="bar-track">
+        <div class="bar-fill ${cat}" data-width="${score}" style="width:0%"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Animate bars
+  setTimeout(() => {
+    container.querySelectorAll('.bar-fill').forEach((bar, i) => {
+      setTimeout(() => { bar.style.width = bar.dataset.width + '%'; }, i * 80);
+    });
+    container.querySelectorAll('.count-up').forEach((el, i) => {
+      setTimeout(() => { animateCounter(el, 0, parseInt(el.dataset.target), 1400); }, i * 80);
+    });
+  }, 100);
+}
+
+// ══════════════════════════════════════════════════════
+// RADAR CHART
+// ══════════════════════════════════════════════════════
+function drawRadar(d) {
+  const canvas  = document.getElementById('radarCanvas');
+  const ctx     = canvas.getContext('2d');
+  const scores  = d.skill_scores || {};
+  const labels  = Object.keys(scores);
+  const values  = labels.map(l => (scores[l] || 0) / 100);
+  const n       = labels.length;
+
+  if (n < 3) { canvas.style.display = 'none'; return; }
+
+  const W = 280, H = 280, cx = W/2, cy = H/2, R = 100;
+  const angle = (i) => (Math.PI * 2 * i / n) - Math.PI / 2;
+  const pt    = (i, r) => ({ x: cx + r * Math.cos(angle(i)), y: cy + r * Math.sin(angle(i)) });
+
+  let progress = 0;
+  function drawFrame(prog) {
+    ctx.clearRect(0, 0, W, H);
+
+    [0.25, 0.5, 0.75, 1].forEach(frac => {
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const p = pt(i, R * frac);
+        i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
+      }
+      ctx.closePath();
+      ctx.strokeStyle = `rgba(236,72,153,${0.05 + frac * 0.05})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+
+    for (let i = 0; i < n; i++) {
+      const p = pt(i, R);
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(p.x, p.y);
+      ctx.strokeStyle = 'rgba(236,72,153,0.1)'; ctx.lineWidth = 1; ctx.stroke();
+    }
+
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, R);
+    grad.addColorStop(0, 'rgba(236,72,153,0.3)');
+    grad.addColorStop(1, 'rgba(168,85,247,0.08)');
+
+    ctx.beginPath();
+    values.forEach((v, i) => {
+      const p = pt(i, R * v * prog);
+      i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
+    });
+    ctx.closePath();
+    ctx.fillStyle = grad; ctx.strokeStyle = 'rgba(236,72,153,0.55)'; ctx.lineWidth = 2;
+    ctx.fill(); ctx.stroke();
+
+    values.forEach((v, i) => {
+      const p = pt(i, R * v * prog);
+      ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = '#ec4899';
+      ctx.shadowColor = 'rgba(236,72,153,0.8)'; ctx.shadowBlur = 8;
+      ctx.fill(); ctx.shadowBlur = 0;
+    });
+
+    ctx.font = '500 11px "Plus Jakarta Sans", sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    labels.forEach((label, i) => {
+      const p = pt(i, R + 22);
+      ctx.fillStyle = 'rgba(255,200,230,0.55)';
+      ctx.fillText(label.length > 10 ? label.slice(0,9)+'…' : label, p.x, p.y);
+    });
+  }
+
+  function animate() {
+    progress += 0.04;
+    drawFrame(Math.min(progress, 1));
+    if (progress < 1) requestAnimationFrame(animate);
+  }
+  animate();
+}
+
+// ══════════════════════════════════════════════════════
+// CATEGORY GROUPS
+// ══════════════════════════════════════════════════════
+function renderCategories(d) {
+  const el = document.getElementById('categoryGroups');
+  const groups = [
+    { key: 'proficient', label: 'Proficient', color: 'proficient', dot: 'spd-proficient' },
+    { key: 'developing', label: 'Developing', color: 'developing', dot: 'spd-developing' },
+    { key: 'gaps',       label: 'Skill Gaps', color: 'gap',        dot: 'spd-gap' },
+  ];
+  el.innerHTML = groups.map(g => {
+    const skills = d[g.key] || [];
+    if (!skills.length) return '';
+    return `
+    <div class="category-group">
+      <div class="cat-label">${g.label}</div>
+      <div class="pill-row">
+        ${skills.map(s => `<div class="skill-pill sp-${g.color}"><div class="sp-dot ${g.dot}"></div>${s}</div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════
+// LEARNING PLAN
+// ══════════════════════════════════════════════════════
+function renderLearningPlan(d) {
+  const container = document.getElementById('learningPlanContainer');
+  const plan = d.learning_plan || [];
+
+  if (!plan.length) {
+    container.innerHTML = `<div class="empty-lp"><div class="big">🏆</div><div>Exceptional performance across all areas!</div><div style="margin-top:6px;font-size:0.76rem;opacity:0.6">Consider advanced certifications or mentoring roles to continue growing.</div></div>`;
+    return;
+  }
+
+  const cat = (skill) => {
+    if ((d.proficient||[]).includes(skill)) return 'proficient';
+    if ((d.developing||[]).includes(skill)) return 'developing';
+    return 'gap';
+  };
+
+  container.innerHTML = plan.map((item, i) => {
+    const c = cat(item.skill);
+    const adjacent  = (item.adjacent_skills || []).slice(0, 4);
+    const resources = (item.resources || []).slice(0, 3);
+    return `
+    <div class="lp-item" style="animation-delay:${i * 0.12}s">
+      <div class="lp-accent ${c}"></div>
+      <div class="lp-body">
+        <div class="lp-head">
+          <div class="lp-skill-name">${item.skill}</div>
+          <div class="lp-week-badge">⏱ ~${item.weeks} weeks</div>
+        </div>
+        <div class="lp-gap-reason">${item.gap_reason || ''}</div>
+        ${item.tip ? `<div class="lp-tip">${item.tip}</div>` : ''}
+        ${adjacent.length ? `
+        <div class="adjacent-row">
+          <span style="font-size:0.65rem;color:rgba(255,130,185,0.3);font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin-right:4px">Adjacent →</span>
+          ${adjacent.map(a => `<div class="adj-pill">${a}</div>`).join('')}
+        </div>` : ''}
+        ${resources.length ? `
+        <div class="resources-label">Curated Resources</div>
+        <div class="resource-list">
+          ${resources.map(r => `
+          <a href="${r.url}" target="_blank" rel="noopener noreferrer" class="resource-link">
+            <div class="res-type-badge rt-${(r.type||'Course').replace(/\s+/g,'')}">${r.type || 'Resource'}</div>
+            <div class="res-title">${r.title}</div>
+            <div class="res-arrow">↗</div>
+          </a>`).join('')}
+        </div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════
+// COUNTER ANIMATION
+// ══════════════════════════════════════════════════════
+function animateCounter(el, from, to, duration, suffix) {
+  const start = performance.now();
+  function tick(now) {
+    const t = Math.min((now - start) / duration, 1);
+    const ease = 1 - Math.pow(1 - t, 4);
+    el.textContent = Math.round(from + (to - from) * ease) + (suffix || '');
+    if (t < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+// ══════════════════════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════════════════════
+populatePage();
+
+// Intersection observer for fade-in elements
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.15 });
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+// Before print: force all bars to final state + draw radar fully
+window.addEventListener('beforeprint', () => {
+  // Force bar fills to final widths immediately
+  document.querySelectorAll('.bar-fill').forEach(b => {
+    b.style.transition = 'none';
+    b.style.width = b.dataset.width + '%';
+  });
+  // Force score num to final value
+  const score = reportData?.overall_score || 0;
+  document.getElementById('scoreNum').textContent = score + '%';
+  // Force stat tiles to final values
+  document.getElementById('statProficient').textContent = reportData?.proficient?.length || 0;
+  document.getElementById('statDeveloping').textContent = reportData?.developing?.length || 0;
+  document.getElementById('statGaps').textContent       = reportData?.gaps?.length       || 0;
+  // Redraw radar at full progress
+  drawRadar(reportData);
+});
+</script>
+</body>
+</html>
